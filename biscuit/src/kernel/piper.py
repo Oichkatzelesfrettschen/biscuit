@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # vim: expandtab ts=4 sw=4
 
 import subprocess
@@ -38,15 +38,15 @@ def symlookup(fn, sym):
     c2 = ['sort']
     c3 = ['fgrep', '-A10', '-w', sym]
     out, _ = piper([c1, c2, c3])
-    lines = filter(None, [l.strip() for l in out.split('\n')])
+    lines = list(filter(None, [l.strip() for l in out.split('\n')]))
     if len(lines) == 0:
-        print 'for', sym
+        print('for', sym)
         raise KeyError('no such sym')
     start = int(lines[0].split()[0], 16)
     end = 0
     found = False
     #for x in lines:
-    #    print x
+    #    print(x)
     for l in lines[1:]:
         end = int(l.split()[0], 16)
         if end > start:
@@ -62,5 +62,5 @@ if __name__ == '__main__':
             ['grep', 'goo'],
     ])
     if a.strip() != 'very good':
-        raise 'bad'
-    print 'gut'
+        raise Exception('bad')
+    print('gut')

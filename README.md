@@ -50,7 +50,7 @@ Biscuit should boot, then you can type a command:
 
 ## Troubleshooting
 
-* You need `qemu-system-x86_64` and `python2` in your environment.  If your distribution does not name them that way, you have to fix the naming, path, etc.
+* You need `qemu-system-x86_64` and `python3` in your environment.  If your distribution does not name them that way, you have to fix the naming, path, etc.
 
 * If the GOPATH environment variable doesn't contain biscuit/, the build will fail with something like:
 ```

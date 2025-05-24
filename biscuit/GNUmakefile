@@ -1,5 +1,5 @@
 QEMU ?= qemu-system-x86_64
-PYTHON ?= python2
+PYTHON ?= python3
 
 TOP := .
 

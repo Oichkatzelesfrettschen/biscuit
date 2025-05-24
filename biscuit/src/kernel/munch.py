@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # vim: expandtab ts=4 sw=4
 
 import getopt
@@ -6,9 +6,9 @@ import subprocess
 import sys
 
 def usage():
-    print >> sys.stderr
-    print >> sys.stderr, 'usage: %s [-db] <PMU profile> <kernel binary> <user binary>' % (sys.argv[0])
-    print >> sys.stderr
+    print(file=sys.stderr)
+    print('usage: %s [-db] <PMU profile> <kernel binary> <user binary>' % (sys.argv[0]), file=sys.stderr)
+    print(file=sys.stderr)
     sys.exit(-1)
 
 # returns whether line is a backtrace sentinel value, the ID of the CPU
@@ -93,7 +93,7 @@ def openrips(fn):
     allbts = sum([sum([len(x) for x in y]) for y in cpubts.values()])
     if backtrace and btfailed != 0:
         fp = float(btfailed) / allbts * 100
-        print 'backtrace failed for %d%% (%d / %d)\n' % (fp, btfailed, allbts)
+        print('backtrace failed for %d%% (%d / %d)\n' % (fp, btfailed, allbts))
     return cpurips, cpubts
 
 def isuser(r):
@@ -202,20 +202,20 @@ def disass(fname, rips, smap, binfn):
             continue
         # don't try to parse ip of first line (name of function)
         if l[0] == '0':
-            print l
+            print(l)
             continue
 
         thisip = l.split()[0]
         thisip = int(thisip[:thisip.find(':')], 16)
         c = rips.count(thisip)
-        print '%6d %s' % (c, l)
+        print('%6d %s' % (c, l))
 
 def dumpsec(secname, rips, binfn, nsamp):
     rips.sort()
 
     smap = getsmap2(binfn)
     fin, ipbn = rip2func(rips, smap)
-    print '==== %s ====' % (secname)
+    print('==== %s ====' % (secname))
     cum = 0.0
     tot = 0
     for f in fin:
@@ -226,15 +226,15 @@ def dumpsec(secname, rips, binfn, nsamp):
         cs = '(%d)' % (c)
         frac = s/nsamp
         cum += s
-        print '%-35s %6.4f %6s (%6.4f)' % (n, frac, cs, cum/nsamp)
+        print('%-35s %6.4f %6s (%6.4f)' % (n, frac, cs, cum/nsamp))
         fname = f[1]
         if dumpips:
             disass(fname, ipbn[fname], smap, binfn)
-    print '---------'
+    print('---------')
     if nsamp == 0:
-        print 'total 0%'
+        print('total 0%')
     else:
-        print 'total %6.2f' % (float(tot)/nsamp)
+        print('total %6.2f' % (float(tot)/nsamp))
 
 def dump(kbin, ubin, rips, dumpips=False):
     samples = len(rips)
@@ -323,7 +323,7 @@ def callers(binfn, bts, builddot):
             f.write('digraph {\n')
             for n in g.nodes():
                 s = minnode + ndelta * (n.frac / maxfrac)
-                lab = '\"\N\\n%.2f%%\"' % (n.frac * 100)
+                lab = '\"\\N\\n%.2f%%\"' % (n.frac * 100)
                 f.write('\t\"%s\" [height=%.2f, width=%.2f, label=%s]\n' % (n.name, s, s, lab))
             for n in g.nodes():
                 for c, _ in n.callees():
@@ -332,24 +332,24 @@ def callers(binfn, bts, builddot):
 
     topc = sorted(g.nodes(), key = lambda x:x.samps, reverse=True)
     topc = filter(lambda x: x.frac > 0.01, topc)
-    print '==== TOP CALLERS ===='
+    print('==== TOP CALLERS ====')
     for x in topc:
         n = x.name
         frac = float(x.samps)/samps
         cs = '(%d)' % (x.samps)
-        print '%-35s %6.4f %6s' % (n, frac, cs)
-    print '==== CALEES ===='
-    print
+        print('%-35s %6.4f %6s' % (n, frac, cs))
+    print('==== CALEES ====')
+    print()
     for x in topc:
         n = x.name
         cs = '(%d)' % (x.samps)
-        print '%-35s %6.4f %6s' % (n, x.frac, cs)
+        print('%-35s %6.4f %6s' % (n, x.frac, cs))
         cees = sorted(x.callees(), key=lambda x:x[0].frac * float(x[1])/x[0].samps, reverse=True)
         for c, times in cees:
             cs = '(%d)' % (times)
             fromme = float(times)/c.samps
-            print '\t%-35s %6.4f %6s' % (c.name, c.frac * fromme, cs)
-    print
+            print('\t%-35s %6.4f %6s' % (c.name, c.frac * fromme, cs))
+    print()
 
 opts, args = getopt.getopt(sys.argv[1:], 'db')
 if len(args) != 3:
@@ -370,15 +370,15 @@ crips, cbts = openrips(prof)
 for cpuid, bts in cbts.items():
     if len(bts) == 0:
         continue
-    print
-    print '===== CPU %d BACKTRACE =======' % (cpuid)
-    print
+    print()
+    print('===== CPU %d BACKTRACE =======' % (cpuid))
+    print()
     callers(kbin, bts, buildg)
 
 for cpuid, rips in crips.items():
     if len(rips) == 0:
         continue
-    print
-    print '===== CPU %d =======' % (cpuid)
-    print
+    print()
+    print('===== CPU %d =======' % (cpuid))
+    print()
     dump(kbin, ubin, rips, dumpips)
