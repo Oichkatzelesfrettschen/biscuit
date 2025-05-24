@@ -3269,7 +3269,8 @@ strtoul(const char *n, char **endptr, int base)
 unsigned long long
 strtoull(const char *n, char **endptr, int base)
 {
-	return strtoull(n, endptr, base);
+        long long ret = strtoll(n, endptr, base);
+        return (unsigned long long)ret;
 }
 
 time_t

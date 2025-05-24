@@ -148,7 +148,7 @@ $(K)/main.gobin: chentry $(GOBIN) $(K)/bins.go $(KSRC) $(FSRC) $(PSRC)
 	ADDR=0x`nm $@_ |grep _rt0_hack |cut -f1 -d' '`; \
 		if test "$$ADDR" = "0x"; then echo no _rt0_hack; false; \
 		else ./chentry $@_ $$ADDR; fi
-	$(K)/rewrite.py $@_ $@
+	$(PYTHON) $(K)/rewrite.py $@_ $@
 
 # the user/% prereq is built by the CPROGS target
 $(FSCPROGS): fsdir/bin/% : user/c/%
