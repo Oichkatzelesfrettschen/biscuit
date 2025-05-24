@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import subprocess
 
@@ -64,6 +64,6 @@ def fileoffsetofsym(fn, sym, dtype=None):
 	return fileoffset
 
 if __name__ == '__main__':
-	sym = 'fsblock_start'
-	a = fileoffsetofsym('main.gobin', sym, 'D')
-	print '%s %#x %d' % (sym, a, a)
+        sym = 'fsblock_start'
+        a = fileoffsetofsym('main.gobin', sym, 'D')
+        print('%s %#x %d' % (sym, a, a))

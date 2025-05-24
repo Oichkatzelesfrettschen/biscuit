@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # vim: expandtab ts=4 sw=4
 
 import piper
@@ -77,9 +77,9 @@ class Params(object):
         textsz = int(d[0], 16)
         self._endva = textva + textsz
 
-        print '.text file offset:', hex(foff)
-        print '.text endva:', hex(self._endva)
-        print '.text VA:', hex(textva), ('(seg %d)' % (textseg))
+        print('.text file offset:', hex(foff))
+        print('.text endva:', hex(self._endva))
+        print('.text VA:', hex(textva), ('(seg %d)' % (textseg)))
 
         with open(fn, 'rb') as f:
             d = f.read()
@@ -121,7 +121,7 @@ class Params(object):
     def _initsym(self, fn, sym):
         s = piper.symlookup(fn, sym)
         self._syms[sym] = s
-        print 'SYM %s %#x %#x' % (s.name, s.start, s.end)
+        print('SYM %s %#x %#x' % (s.name, s.start, s.end))
 
     # returns true if ins is the first instruction of a write barrier check
     def isoldwb(self, ins):
@@ -201,7 +201,7 @@ class Params(object):
             ins = self.next(ins)
             if ins.id in xids:
                 return ins
-        print 'ADDR', hex(ins.address)
+        print('ADDR', hex(ins.address))
         raise 'didnt find within bound'
 
     # returns the first jump instructions after ins
@@ -214,7 +214,7 @@ class Params(object):
 
     def ensure(self, ins, xids):
         if ins.id not in xids:
-            print '%x %s (%s %s)' % (ins.address, xids, ins.mnemonic, ins.op_str)
+            print('%x %s (%s %s)' % (ins.address, xids, ins.mnemonic, ins.op_str))
             raise 'mismatch'
 
     def iswb(self, ins):
@@ -363,12 +363,12 @@ class Params(object):
         return ret
 
     def prbb(self, bb):
-        print '------- %x -----' % (bb.firstaddr)
-        print 'PREDS', ' '.join(['%x' % (x) for x in bb.preds])
+        print('------- %x -----' % (bb.firstaddr))
+        print('PREDS', ' '.join(['%x' % (x) for x in bb.preds]))
         for caddr in bb.addrs:
             ins = self._iaddr[caddr]
-            print '%x: %s %s' % (ins.address, ins.mnemonic, ins.op_str)
-        print 'SUCS', ' '.join(['%x' % (x) for x in bb.succs])
+            print('%x: %s %s' % (ins.address, ins.mnemonic, ins.op_str))
+        print('SUCS', ' '.join(['%x' % (x) for x in bb.succs]))
         #print '--------------------'
 
     def sucsfor(self, end, bstops):
@@ -735,26 +735,26 @@ class Params(object):
         return binst
 
 def writerips(rips, fn):
-    print 'writing "%s"...' % (fn)
+    print('writing "%s"...' % (fn))
     with open(fn, 'w') as f:
         for w in rips:
-            print >> f, '%x' % (w)
+            print('%x' % (w), file=f)
 
 # writefake creates a fake profile (for munch.py) using the instructions in
 # rips; use "munch.py -d" to manually inspect the instructions identified as
 # HLL tax instructions in the kernel binary.
 def writefake(rips, fn):
-    print 'writing fake prof "%s"...' % (fn)
+    print('writing fake prof "%s"...' % (fn))
     with open(fn, 'w') as f:
         for w in rips:
-            print >> f, '%x -- 1' % (w)
+            print('%x -- 1' % (w), file=f)
 
 #p = Params('main.gobin')
 p = Params('kernel.gobin')
-print 'made all map: %d' % (len(p._ilist))
+print('made all map: %d' % (len(p._ilist)))
 
 wb = p.writebarriers()
-print 'found', len(wb)
+print('found', len(wb))
 writerips(wb, 'wbars.rips')
 
 ptr = p.ptrchecks()
