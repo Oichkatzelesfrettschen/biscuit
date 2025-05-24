@@ -16,11 +16,16 @@ if left < 0:
     s = 'boot sector is bigger than numblocks (is %d, should be %d)' % (numblocks, sb)
     raise ValueError(s)
 
-with open(fn, 'a') as f:
-    f.write(''.join([chr(0) for i in range(left)]))
+# Append zero bytes until the bootloader is exactly numblocks*512 bytes.
+# Use binary mode to avoid text encoding issues.
+with open(fn, 'ab') as f:
+    f.write(b"\x00" * left)
 
-with open(fn, 'r') as f:
+# Verify the boot signature. Read in binary mode for the same reason as above.
+with open(fn, 'rb') as f:
     d = f.read(512)
 
-if ord(d[510]) != 0x55 or ord(d[511]) != 0xaa:
+# When opened in binary mode, d is a bytes object. Check the boot signature by
+# looking at the integer values of the last two bytes.
+if d[510] != 0x55 or d[511] != 0xaa:
     raise ValueError('sig is wrong! fix damn text ordering somehow')

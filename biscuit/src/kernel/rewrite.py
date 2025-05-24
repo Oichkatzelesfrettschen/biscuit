@@ -10,10 +10,10 @@ def usage():
 
 def _fsrex(data):
     # FS seg override?
-    c = ord(data[0])
+    c = data[0]
     if c != 0x64:
         return False
-    c = ord(data[1])
+    c = data[1]
     # 64 bit width, 64bit width + r8-r15 reg
     rexes = [0x48, 0x4c]
     if c not in rexes:
@@ -26,7 +26,7 @@ def _movs(data):
     if not _fsrex(data):
         return False
 
-    c = ord(data[2])
+    c = data[2]
     # moves that i don't expect but may see someday
     maybemov = [0x88, 0x8c, 0x8e, 0xa0, 0xa1, 0xa2, 0xa3, 0xb0, 0xb8, 0xc6]
     if c in maybemov:
@@ -42,27 +42,27 @@ def _cmps(data):
     # override
     if not _fsrex(data):
         return False
-    if data[2] != '\x39':
+    if data[2] != 0x39:
         return False
     return True
 
 def rewrite(f):
     spots = getspots(f.name)
 
-    data = list(f.read())
+    data = bytearray(f.read())
     found = 0
     for i in spots:
         d = data[i:i+3]
         if _movs(d) or _cmps(d):
             found += 1
-            data[i] = '\x65'
+            data[i] = 0x65
     if found == 0:
         raise ValueError('didnt find a single occurance')
     skipped = len(spots) - found
     print('patched %d instructions (%d skipped)' % (found, skipped), file=sys.stderr)
     if found < skipped:
         raise ValueError('more skipped than found')
-    return ''.join(data)
+    return bytes(data)
 
 def getspots(fn):
     # find all potential file offsets where an instruction uses %fs
@@ -73,6 +73,7 @@ def getspots(fn):
 
     od.stdout.close()
     data, _ = gr.communicate()
+    data = data.decode('utf-8')
 
     ret = []
     for l in data.split('\n'):
@@ -97,7 +98,7 @@ newdata = ''
 with open(fn, 'r+b') as f:
     newdata = rewrite(f)
 
-with open(dn, 'w') as nf:
+with open(dn, 'wb') as nf:
     nf.write(newdata)
 
 print('created %s' % (dn), file=sys.stderr)
