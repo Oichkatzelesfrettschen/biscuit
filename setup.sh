@@ -11,7 +11,40 @@ need_install() {
 }
 
 # Required packages for the build.
-packages=(qemu-system-x86 build-essential python3)
+packages=(
+  qemu-system-x86   # QEMU emulator for running Biscuit
+  build-essential   # GCC and related build tools
+  python3           # Python required for some build scripts
+  curl              # Preferred tool for downloading Go bootstrap
+  wget              # Fallback download tool
+)
+
+# Bootstrap Go version to download when no system Go is found.
+GO_BOOTSTRAP_VERSION=1.20.7
+
+# Directory where the bootstrap Go will be installed.
+GO_BOOTSTRAP_DIR="$HOME/go-bootstrap"
+
+# Download and unpack the Go bootstrap toolchain into GO_BOOTSTRAP_DIR.
+download_go() {
+  local url="https://dl.google.com/go/go${GO_BOOTSTRAP_VERSION}.linux-amd64.tar.gz"
+  local tarball="/tmp/go${GO_BOOTSTRAP_VERSION}.tar.gz"
+
+  mkdir -p "$GO_BOOTSTRAP_DIR"
+
+  if command -v curl >/dev/null; then
+    # Use curl if available.
+    curl -fsSL "$url" -o "$tarball"
+  elif command -v wget >/dev/null; then
+    # Fallback to wget.
+    wget -qO "$tarball" "$url"
+  else
+    echo "Error: curl or wget is required to download Go" >&2
+    return 1
+  fi
+
+  tar -C "$GO_BOOTSTRAP_DIR" -xzf "$tarball" --strip-components=1
+}
 
 # Gather all packages that are missing.
 missing=()
@@ -25,8 +58,19 @@ if [ ${#missing[@]} -ne 0 ]; then
   sudo apt-get install -y "${missing[@]}"
 fi
 
-# Use the system Go for bootstrapping.
-export GOROOT_BOOTSTRAP=$(go env GOROOT)
+# Set up the Go bootstrap toolchain.
+if command -v go >/dev/null; then
+  # If Go exists, use its GOROOT for bootstrapping.
+  export GOROOT_BOOTSTRAP="$(go env GOROOT)"
+else
+  # Otherwise download a lightweight bootstrap toolchain.
+  download_go
+  export GOROOT_BOOTSTRAP="$GO_BOOTSTRAP_DIR"
+fi
 
-# Print Go version for verification.
-go version
+# Print Go version for verification if available.
+if command -v go >/dev/null; then
+  go version
+else
+  "$GOROOT_BOOTSTRAP/bin/go" version
+fi
