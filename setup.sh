@@ -14,9 +14,24 @@ need_install() {
 packages=(
   qemu-system-x86   # QEMU emulator for running Biscuit
   build-essential   # GCC and related build tools
+  git               # Version control
+  gdb               # Debugger
+  clang             # Additional compiler for fuzzing or linting
+  clang-format      # Code formatting tool
+  lld               # LLVM linker used by some build scripts
+  llvm              # LLVM utilities such as objdump
+  valgrind          # Memory debugging
+  strace            # System call tracing
+  ltrace            # Library call tracing
+  cmake             # Build configuration tool
   python3           # Python required for some build scripts
+  python3-pip       # Python package installer
+  nodejs            # Node runtime
+  npm               # Node package manager
   curl              # Preferred tool for downloading Go bootstrap
   wget              # Fallback download tool
+  coq               # Coq proof assistant
+  tlaplus           # Tools for TLA+ specifications
 )
 
 # Bootstrap Go version to download when no system Go is found.
@@ -56,6 +71,22 @@ done
 if [ ${#missing[@]} -ne 0 ]; then
   sudo apt-get update
   sudo apt-get install -y "${missing[@]}"
+fi
+
+# Install Python and Node utilities used for testing and linting.
+if command -v pip3 >/dev/null; then
+  pip3 install --user --upgrade mypy flake8 pytest >/dev/null 2>&1 || true
+fi
+
+if command -v npm >/dev/null; then
+  npm install --global eslint prettier >/dev/null 2>&1 || true
+fi
+
+# Run any custom setup scripts provided by the repository.
+if [ -d "scripts/setup.d" ]; then
+  for script in scripts/setup.d/*; do
+    [ -f "$script" ] && bash "$script"
+  done
 fi
 
 # Set up the Go bootstrap toolchain.
