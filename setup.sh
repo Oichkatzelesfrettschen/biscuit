@@ -6,7 +6,17 @@
 # available this script downloads a small Go toolchain that is only
 # used for bootstrapping the old runtime. The script fetches the latest
 # stable release of Go so that the toolchain stays up to date.
-set -euo pipefail
+set -uo pipefail
+
+# Prefix all logs so output is easy to follow.
+log() {
+  echo "[setup] $*"
+}
+
+# Log errors but do not stop execution.
+log_error() {
+  echo "[setup] ERROR: $*" >&2
+}
 
 # Determine whether we need to install packages required for building Biscuit.
 need_install() {
@@ -65,30 +75,48 @@ download_go() {
 
   if command -v curl >/dev/null; then
     # Use curl if available.
-    curl -fsSL "$url" -o "$tarball"
+    curl -fsSL "$url" -o "$tarball" >/dev/null 2>&1 || \
+      log_error "Failed to download Go with curl"
   elif command -v wget >/dev/null; then
     # Fallback to wget.
-    wget -qO "$tarball" "$url"
+    wget -qO "$tarball" "$url" >/dev/null 2>&1 || \
+      log_error "Failed to download Go with wget"
   else
-    echo "Error: curl or wget is required to download Go" >&2
-    return 1
+    log_error "curl or wget is required to download Go"
+    return
   fi
 
-  tar -C "$GO_BOOTSTRAP_DIR" -xzf "$tarball" --strip-components=1
+  tar -C "$GO_BOOTSTRAP_DIR" -xzf "$tarball" --strip-components=1 >/dev/null 2>&1 && \
+    log "Go bootstrap extracted" || \
+    log_error "Failed to extract Go bootstrap"
   export PATH="$GO_BOOTSTRAP_DIR/bin:$PATH" # Make 'go' command available.
 }
 
-# Gather all packages that are missing.
-missing=()
-for pkg in "${packages[@]}"; do
-  need_install "$pkg" && missing+=("$pkg")
-done
+# Gather missing packages and attempt installation. Failures are logged but
+# do not abort the script.
+install_packages() {
+  local missing=()
+  for pkg in "${packages[@]}"; do
+    need_install "$pkg" && missing+=("$pkg")
+  done
 
-# Install missing packages, if any.
-if [ ${#missing[@]} -ne 0 ]; then
-  sudo apt-get update
-  sudo apt-get install -y "${missing[@]}"
-fi
+  if [ ${#missing[@]} -eq 0 ]; then
+    log "All packages already installed"
+    return
+  fi
+
+  sudo apt-get update >/dev/null 2>&1 || \
+    log_error "apt-get update failed"
+
+  for pkg in "${missing[@]}"; do
+    sudo apt-get install -y "$pkg" >/dev/null 2>&1 && \
+      log "Installed $pkg" || \
+      log_error "Failed to install $pkg"
+  done
+}
+
+# Begin setup sequence.
+install_packages
 
 # Install Python and Node utilities used for testing and linting.
 if command -v pip3 >/dev/null; then
@@ -117,4 +145,25 @@ else
 fi
 
 # Show which Go compiler will be used.
-go version
+log "Using $(go version)"
+
+# Build Biscuit's modified Go runtime. The build uses the bootstrapped Go
+# compiler configured above and must succeed before building the kernel.
+build_runtime() {
+  log "Building Biscuit Go runtime..."
+  (cd src && ./make.bash >/dev/null 2>&1) && \
+    log "Runtime build finished" || \
+    log_error "Runtime build failed"
+}
+
+# Build the Biscuit kernel and userland using the freshly built runtime.
+build_biscuit() {
+  log "Building Biscuit kernel and user programs..."
+  GOPATH="$(pwd)" make -C biscuit >/dev/null 2>&1 && \
+    log "Biscuit build finished" || \
+    log_error "Biscuit build failed"
+}
+
+build_runtime
+build_biscuit
+
