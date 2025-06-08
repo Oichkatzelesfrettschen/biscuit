@@ -41,6 +41,8 @@ packages=(
   cmake             # Build configuration tool
   python3           # Python required for some build scripts
   python3-pip       # Python package installer
+  doxygen           # Documentation generator
+  python3-sphinx    # Sphinx documentation tool
   nodejs            # Node runtime
   npm               # Node package manager
   curl              # Preferred tool for downloading Go bootstrap

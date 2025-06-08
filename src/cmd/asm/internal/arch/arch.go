@@ -39,14 +39,17 @@ type Arch struct {
 	IsJump func(word string) bool
 }
 
-// nilRegisterNumber is the register number function for architectures
-// that do not accept the R(N) notation. It always returns failure.
+/// Default register-number resolver used on architectures without R(N) syntax.
+/// @param name Register name.
+/// @param n Register index as parsed from R(N).
+/// @return Tuple containing the resolved register value and success flag.
 func nilRegisterNumber(name string, n int16) (int16, bool) {
 	return 0, false
 }
 
-// Set configures the architecture specified by GOARCH and returns its representation.
-// It returns nil if GOARCH is not recognized.
+/// Selects the architecture description for a given GOARCH string.
+/// @param GOARCH Target architecture name.
+/// @return Architecture info or nil if not supported.
 func Set(GOARCH string) *Arch {
 	switch GOARCH {
 	case "386":

@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build !386
 // +build !386
 
 package sys
@@ -30,8 +31,9 @@ var deBruijnIdx32 = [32]byte{
 	30, 9, 19, 24, 29, 18, 28, 27,
 }
 
-// Ctz64 counts trailing (low-order) zeroes,
-// and if all are zero, then 64.
+/// Counts the number of trailing zero bits in `x`.
+/// @param x 64-bit value to examine.
+/// @return The count of trailing zeros; returns 64 when `x` is zero.
 func Ctz64(x uint64) int {
 	x &= -x                      // isolate low-order bit
 	y := x * deBruijn64 >> 58    // extract part of deBruijn sequence
@@ -40,8 +42,9 @@ func Ctz64(x uint64) int {
 	return i + z
 }
 
-// Ctz32 counts trailing (low-order) zeroes,
-// and if all are zero, then 32.
+/// Counts the number of trailing zero bits in `x`.
+/// @param x 32-bit value to examine.
+/// @return The count of trailing zeros; returns 32 when `x` is zero.
 func Ctz32(x uint32) int {
 	x &= -x                      // isolate low-order bit
 	y := x * deBruijn32 >> 27    // extract part of deBruijn sequence
@@ -50,8 +53,10 @@ func Ctz32(x uint32) int {
 	return i + z
 }
 
-// Bswap64 returns its input with byte order reversed
-// 0x0102030405060708 -> 0x0807060504030201
+/// Reverses the byte order of a 64-bit value.
+/// 0x0102030405060708 becomes 0x0807060504030201.
+/// @param x input value.
+/// @return value with reversed byte order.
 func Bswap64(x uint64) uint64 {
 	c8 := uint64(0x00ff00ff00ff00ff)
 	a := x >> 8 & c8
@@ -68,8 +73,10 @@ func Bswap64(x uint64) uint64 {
 	return x
 }
 
-// Bswap32 returns its input with byte order reversed
-// 0x01020304 -> 0x04030201
+/// Reverses the byte order of a 32-bit value.
+/// 0x01020304 becomes 0x04030201.
+/// @param x input value.
+/// @return value with reversed byte order.
 func Bswap32(x uint32) uint32 {
 	c8 := uint32(0x00ff00ff)
 	a := x >> 8 & c8
