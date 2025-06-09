@@ -9,3 +9,4 @@ All code changes must use modern language paradigms and idiomatic style. Functio
 - Always run `gofmt` or an equivalent formatter on changed files after modifications.
 - Before building or testing, install a comprehensive suite of development tools from **apt**, **pip**, and **npm**, including packages from common PPAs and repositories, to provide a maximally provisioned environment.
 
+All modifications must further decompose, unroll, flatten, factor and synthesize the code into modern idiomatic expressions guided by mathematical principles wherever possible.
