@@ -4,12 +4,12 @@ import "os"
 
 import "log"
 
-import "defs"
-import "fd"
-import "fs"
-import "stat"
-import "ustr"
-import "vm"
+import "biscuit/biscuit/src/defs"
+import "biscuit/biscuit/src/fd"
+import "biscuit/biscuit/src/fs"
+import "biscuit/biscuit/src/stat"
+import "biscuit/biscuit/src/ustr"
+import "biscuit/biscuit/src/vm"
 
 //
 // FS

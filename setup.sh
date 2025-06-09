@@ -17,6 +17,10 @@ set -euo pipefail
 export PATH="/usr/local/go/bin:/usr/local/sbin:\
 /usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
+# Use GOPATH mode to build legacy components
+export GOPATH="$(pwd)/biscuit"
+export GO111MODULE=off
+
 ## @var packages
 #  @brief APT packages required by Biscuit (no duplicates).
 packages=(
@@ -29,10 +33,17 @@ packages=(
   ctags               # Code tagging
   cmake               # Build system generator
   doxygen             # API doc generator
+  doxygen-doc         # HTML manuals
+  doxygen-gui         # GUI frontend
+  doxygen-latex       # LaTeX/PDF output
   gdb                 # Debugger
   git                 # Version control
   golang-go           # Go compiler (>=1.22)
   graphviz            # Graph visualizer
+  graphviz-doc        # Graphviz manuals
+  libgraphviz-dev     # Development libraries
+  python3-graphviz    # Python bindings
+  python3-pygraphviz  # Python interface
   htop                # Process monitor
   jq                  # JSON processor
   lld                 # LLVM linker
@@ -45,6 +56,8 @@ packages=(
   python3             # Python interpreter
   python3-pip         # Python package installer
   python3-sphinx      # Sphinx docs
+  sphinx-doc          # Extra HTML manuals
+  python3-sphinx-rtd-theme # ReadTheDocs theme
   python3-venv        # Virtual env support
   qemu-system-x86     # QEMU emulator
   shellcheck          # Shell script linter
@@ -159,7 +172,17 @@ packages=(
   python3           # Python required for some build scripts
   python3-pip       # Python package installer
   doxygen           # Documentation generator
+  doxygen-doc       # HTML manuals
+  doxygen-gui       # GUI frontend
+  doxygen-latex     # LaTeX/PDF output
+  graphviz          # Graph visualizer
+  graphviz-doc      # Graphviz manuals
+  libgraphviz-dev   # Development libraries
+  python3-graphviz  # Python bindings
+  python3-pygraphviz # Python interface
   python3-sphinx    # Sphinx documentation tool
+  sphinx-doc        # Extra HTML manuals
+  python3-sphinx-rtd-theme # ReadTheDocs theme
   tmux              # Terminal multiplexer
   cloc              # Source code line counter
   nodejs            # Node runtime
@@ -295,7 +318,7 @@ fi
  */
 build_biscuit() {
   log "Building Biscuit..."
-  GOPATH="$(pwd)" make -C biscuit > /dev/null 2>&1 &&
+  GOPATH="$(pwd)/biscuit" GO111MODULE=off make -C biscuit > /dev/null 2>&1 &&
     log "Biscuit build complete" ||
     log_error "Biscuit build failed"
 }
