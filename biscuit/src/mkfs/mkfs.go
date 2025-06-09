@@ -1,66 +1,82 @@
 package main
 
-import "os"
-import "fmt"
-import "strings"
-import "path/filepath"
+import (
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
-import "fs"
-import "ufs"
-import "ustr"
+	"biscuit/biscuit/src/fs"
+	"biscuit/biscuit/src/ufs"
+	"biscuit/biscuit/src/ustr"
+)
 
+// Constants describing the layout of the created filesystem.
 const (
-	nlogblks   = 1024 // 2048
+	nlogblks   = 1024 // number of log blocks
 	ninodeblks = 100 * 50
 	ndatablks  = 40000
 )
 
+// copydata reads the file at `src` and appends its contents to `dst` in the
+// provided filesystem.
+//
+// \param src path to the source file on the host
+// \param f   filesystem handle obtained from ufs.BootFS
+// \param dst destination path within the image
 func copydata(src string, f *ufs.Ufs_t, dst string) {
-	s, err := os.Open(src)
+	srcFile, err := os.Open(src)
 	if err != nil {
 		panic(err)
 	}
-	b := make([]byte, fs.BSIZE)
+	defer srcFile.Close()
+
+	buf := make([]byte, fs.BSIZE)
 	for {
-		n, err := s.Read(b)
-		if err != nil {
-			return
+		n, readErr := srcFile.Read(buf)
+		if readErr != nil && readErr != io.EOF {
+			panic(readErr)
 		}
 		if n == 0 {
-			return
+			break
 		}
-		b = b[:n]
-		buf := ufs.MkBuf(b)
-		f.Append(ustr.Ustr(dst), buf)
-	}
-	if err := s.Close(); err != nil {
-		panic(err)
+		chunk := ufs.MkBuf(buf[:n])
+		f.Append(ustr.Ustr(dst), chunk)
+		if readErr == io.EOF {
+			break
+		}
 	}
 }
 
+// addfiles walks `skeldir` on the host and replicates its contents into the
+// filesystem `fs`.
+//
+// \param fs       target filesystem
+// \param skeldir  host directory tree to copy
 func addfiles(fs *ufs.Ufs_t, skeldir string) {
-	err := filepath.Walk(skeldir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(skeldir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", skeldir, err)
+			fmt.Printf("failed to access %q: %v\n", path, err)
 			return err
 		}
-		p := strings.TrimPrefix(path, skeldir)
-		if p == "" {
+
+		rel := strings.TrimPrefix(path, skeldir)
+		if rel == "" {
 			return nil
 		}
-		if info.IsDir() {
-			e := fs.MkDir(ustr.Ustr(p))
-			if e != 0 {
-				fmt.Printf("failed to create dir %v\n", p)
-			}
 
-		} else {
-			e := fs.MkFile(ustr.Ustr(p), nil)
-			if e != 0 {
-				fmt.Printf("failed to create file %v\n", p)
+		if d.IsDir() {
+			if e := fs.MkDir(ustr.Ustr(rel)); e != 0 {
+				fmt.Printf("failed to create dir %v\n", rel)
 			}
-			copydata(path, fs, p)
+			return nil
 		}
+
+		if e := fs.MkFile(ustr.Ustr(rel), nil); e != 0 {
+			fmt.Printf("failed to create file %v\n", rel)
+		}
+		copydata(path, fs, rel)
 		return nil
 	})
 
@@ -70,6 +86,8 @@ func addfiles(fs *ufs.Ufs_t, skeldir string) {
 	}
 }
 
+// main is the entry point for the mkfs utility. It creates a bootable disk
+// image composed of the bootloader, kernel, and a skeletal filesystem.
 func main() {
 	if len(os.Args) < 5 {
 		fmt.Printf("Usage: mkfs <bootimage> <kernel image> <output image> <skel dir>\n")
@@ -77,28 +95,16 @@ func main() {
 	}
 
 	image := os.Args[3]
-
-	imgs := []string{os.Args[1], os.Args[2]}
-
-	ufs.MkDisk(image, imgs, nlogblks, ninodeblks, ndatablks)
+	inputs := []string{os.Args[1], os.Args[2]}
+	ufs.MkDisk(image, inputs, nlogblks, ninodeblks, ndatablks)
 
 	fs := ufs.BootFS(image)
-	_, err := fs.Stat(ustr.MkUstrRoot())
-	if err != 0 {
+	if _, err := fs.Stat(ustr.MkUstrRoot()); err != 0 {
 		fmt.Printf("not a valid fs: no root inode\n")
 		os.Exit(1)
 	}
 
 	addfiles(fs, os.Args[4])
-
-	// dir, err := fs.Ls("/")
-	// if err != 0 {
-	// 	fmt.Printf("not a valid fs: no root dir\n")
-	// 	os.Exit(1)
-	// }
-	// for k, v := range dir {
-	// 	fmt.Printf("%v %v\n", k, v)
-	// }
 
 	ufs.ShutdownFS(fs)
 }
