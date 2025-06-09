@@ -9,10 +9,11 @@ All code changes must use modern language paradigms and idiomatic style. Functio
 
 ## Extended Guidelines
 
-- Any file touched must be fully refactored to modern Go **1.22+** idioms (the repository currently uses Go 1.24.x). Decompose complex logic, unroll loops, flatten nested structures, remove outdated patterns, and replace special functions with standard equivalents. Emphasize modern design patterns throughout.
+- Any file touched must be fully refactored to modern Go **1.24.x** idioms. Decompose complex logic, unroll loops, flatten nested structures, remove outdated patterns, and replace special functions with standard equivalents. Emphasize modern design patterns throughout.
 - Apply these refactoring principles recursively to dependent modules and packages so the entire codebase remains consistent.
 - Ensure that all code is thoroughly commented. Each function requires Doxygen-compatible documentation.
 - Always run `gofmt` or an equivalent formatter on changed files after modifications.
 - Before building or testing, install a comprehensive suite of development tools from **apt**, **pip**, and **npm**, including packages from common PPAs and repositories, to provide a maximally provisioned environment.
+- Run `go test -v ./...` to get verbose output. Capture and analyze any failures to understand broader architectural issues and address them holistically.
 
 All modifications must further decompose, unroll, flatten, factor and synthesize the code into modern idiomatic expressions guided by mathematical principles wherever possible.
