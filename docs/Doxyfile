@@ -1,8 +1,9 @@
 PROJECT_NAME = Biscuit
 OUTPUT_DIRECTORY = build
-INPUT = ../src
+INPUT = ../src ../biscuit ../api ../lib ../test
 FILE_PATTERNS = *.go *.c *.h *.s
 RECURSIVE = YES
 EXTRACT_ALL = YES
 GENERATE_HTML = YES
+GENERATE_XML = YES
 WARN_IF_UNDOCUMENTED = YES

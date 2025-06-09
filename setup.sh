@@ -28,6 +28,8 @@ need_install() {
 # Required packages for the build.
 packages=(
   qemu-system-x86   # QEMU emulator for running Biscuit
+  qemu-utils        # QEMU disk utilities
+  qemu-nox          # Headless QEMU binary
   build-essential   # GCC and related build tools
   git               # Version control
   gdb               # Debugger
@@ -43,6 +45,8 @@ packages=(
   python3-pip       # Python package installer
   doxygen           # Documentation generator
   python3-sphinx    # Sphinx documentation tool
+  tmux              # Terminal multiplexer
+  cloc              # Source code line counter
   nodejs            # Node runtime
   npm               # Node package manager
   curl              # Preferred tool for downloading Go bootstrap
@@ -122,7 +126,7 @@ install_packages
 
 # Install Python and Node utilities used for testing and linting.
 if command -v pip3 >/dev/null; then
-  pip3 install --user --upgrade mypy flake8 pytest >/dev/null 2>&1 || true
+  pip3 install --user --upgrade mypy flake8 pytest breathe sphinx-rtd-theme >/dev/null 2>&1 || true
 fi
 
 if command -v npm >/dev/null; then
