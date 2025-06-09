@@ -140,6 +140,39 @@ need_install() {
 #
 # @brief  Install all missing packages.
 # @details Uses the detected package manager for minimal installs
+# Required packages for the build.
+packages=(
+  qemu-system-x86   # QEMU emulator for running Biscuit
+  qemu-utils        # QEMU disk utilities
+  qemu-nox          # Headless QEMU binary
+  build-essential   # GCC and related build tools
+  git               # Version control
+  gdb               # Debugger
+  clang             # Additional compiler for fuzzing or linting
+  clang-format      # Code formatting tool
+  lld               # LLVM linker used by some build scripts
+  llvm              # LLVM utilities such as objdump
+  valgrind          # Memory debugging
+  strace            # System call tracing
+  ltrace            # Library call tracing
+  cmake             # Build configuration tool
+  python3           # Python required for some build scripts
+  python3-pip       # Python package installer
+  doxygen           # Documentation generator
+  python3-sphinx    # Sphinx documentation tool
+  tmux              # Terminal multiplexer
+  cloc              # Source code line counter
+  nodejs            # Node runtime
+  npm               # Node package manager
+  curl              # Preferred tool for downloading Go bootstrap
+  wget              # Fallback download tool
+  coq               # Coq proof assistant
+  tlaplus           # Tools for TLA+ specifications
+)
+/**
+ * @brief  Install all missing APT packages.
+ * @details Uses non-interactive, no-install-recommends for minimal installs :contentReference[oaicite:7]{index=7}
+ */
 install_packages() {
   detect_package_manager
   local missing=()
@@ -253,6 +286,13 @@ build_runtime() {
 #
 # @brief  Build Biscuit kernel & userland.
 # /
+# Install Python and Node utilities used for testing and linting.
+if command -v pip3 >/dev/null; then
+  pip3 install --user --upgrade mypy flake8 pytest breathe sphinx-rtd-theme >/dev/null 2>&1 || true
+fi
+/**
+ * @brief  Build Biscuit kernel & userland.
+ */
 build_biscuit() {
   log "Building Biscuit..."
   GOPATH="$(pwd)" make -C biscuit > /dev/null 2>&1 &&

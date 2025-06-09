@@ -4,22 +4,23 @@ import "defs"
 import "fdops"
 import "mem"
 
-// a circular buffer that is read/written by userspace. not thread-safe -- it
-// is intended to be used by one daemon.
+// Circbuf_t implements a simple circular buffer used by a single daemon.
+// It is not safe for concurrent use.
 type Circbuf_t struct {
-	mem   mem.Page_i
-	Buf   []uint8
-	bufsz int
-	// XXX uint
-	head int
-	tail int
-	p_pg mem.Pa_t
+	mem   mem.Page_i /// page allocator interface
+	Buf   []uint8    /// underlying buffer backing memory
+	bufsz int        /// buffer capacity in bytes
+	head  int        /// write position
+	tail  int        /// read position
+	p_pg  mem.Pa_t   /// physical page backing the buffer
 }
 
+// / Bufsz returns the configured buffer size.
 func (cb *Circbuf_t) Bufsz() int {
 	return cb.bufsz
 }
 
+// / Set provides an existing byte slice and page allocator.
 func (cb *Circbuf_t) Set(nb []uint8, did int, m mem.Page_i) {
 	cb.mem = m
 	cb.Buf = nb
@@ -28,8 +29,9 @@ func (cb *Circbuf_t) Set(nb []uint8, did int, m mem.Page_i) {
 	cb.tail = 0
 }
 
-// may fail to allocate a page for the buffer. when cb's life is over, someone
-// must free the buffer page by calling cb_release().
+// / Cb_init lazily allocates a backing page when required.
+// /
+// / Returns ENOMEM on allocation failure.
 func (cb *Circbuf_t) Cb_init(sz int, m mem.Page_i) defs.Err_t {
 	bufmax := int(mem.PGSIZE)
 	if sz <= 0 || sz > bufmax {
@@ -44,8 +46,7 @@ func (cb *Circbuf_t) Cb_init(sz int, m mem.Page_i) defs.Err_t {
 	return 0
 }
 
-// provide the page for the buffer explicitly; useful for guaranteeing that
-// read/writes won't fail to allocate memory.
+// / Cb_init_phys supplies a preallocated page backing the buffer.
 func (cb *Circbuf_t) Cb_init_phys(v []uint8, p_pg mem.Pa_t, m mem.Page_i) {
 	cb.mem = m
 	cb.mem.Refup(p_pg)
@@ -55,6 +56,8 @@ func (cb *Circbuf_t) Cb_init_phys(v []uint8, p_pg mem.Pa_t, m mem.Page_i) {
 	cb.head, cb.tail = 0, 0
 }
 
+// / Cb_release drops the reference to the backing page.
+// / Cb_release drops the reference to the backing page.
 func (cb *Circbuf_t) Cb_release() {
 	if cb.Buf == nil {
 		return
@@ -65,6 +68,7 @@ func (cb *Circbuf_t) Cb_release() {
 	cb.head, cb.tail = 0, 0
 }
 
+// / Cb_ensure guarantees that the buffer is allocated.
 func (cb *Circbuf_t) Cb_ensure() defs.Err_t {
 	if cb.Buf != nil {
 		return 0
@@ -82,25 +86,32 @@ func (cb *Circbuf_t) Cb_ensure() defs.Err_t {
 	return 0
 }
 
+// / Full returns true when the buffer cannot accept more data.
 func (cb *Circbuf_t) Full() bool {
 	return cb.head-cb.tail == cb.bufsz
 }
 
+// / Empty reports whether the buffer contains any data.
 func (cb *Circbuf_t) Empty() bool {
 	return cb.head == cb.tail
 }
 
+// / Left returns the remaining capacity in bytes.
 func (cb *Circbuf_t) Left() int {
 	used := cb.head - cb.tail
 	rem := cb.bufsz - used
 	return rem
 }
 
+// / Used returns the current number of bytes in the buffer.
 func (cb *Circbuf_t) Used() int {
 	used := cb.head - cb.tail
 	return used
 }
 
+// / Copyin reads from src into the circular buffer.
+// /
+// / Returns the number of bytes written and any error.
 func (cb *Circbuf_t) Copyin(src fdops.Userio_i) (int, defs.Err_t) {
 	if err := cb.Cb_ensure(); err != 0 {
 		return 0, err
@@ -139,10 +150,14 @@ func (cb *Circbuf_t) Copyin(src fdops.Userio_i) (int, defs.Err_t) {
 	return c, 0
 }
 
+// / Copyout writes the entire buffer contents to dst.
 func (cb *Circbuf_t) Copyout(dst fdops.Userio_i) (int, defs.Err_t) {
 	return cb.Copyout_n(dst, 0)
 }
 
+// / Copyout_n writes up to max bytes of the buffer to dst.
+// /
+// / Returns the number of bytes written and any error.
 func (cb *Circbuf_t) Copyout_n(dst fdops.Userio_i, max int) (int, defs.Err_t) {
 	if err := cb.Cb_ensure(); err != 0 {
 		return 0, err
@@ -194,6 +209,9 @@ func (cb *Circbuf_t) Copyout_n(dst fdops.Userio_i, max int) (int, defs.Err_t) {
 // head+offset+sz) which must be outside [tail, head). returns two slices when
 // the returned buffer wraps.
 // XXX XXX XXX XXX XXX remove arg
+// / Rawwrite exposes a slice for writing to the buffer without copying.
+// / The returned slices reference the internal buffer and must not overlap
+// / existing user data.
 func (cb *Circbuf_t) Rawwrite(offset, sz int) ([]uint8, []uint8) {
 	if cb.Buf == nil {
 		panic("no lazy allocation for tcp")
@@ -231,6 +249,7 @@ func (cb *Circbuf_t) Rawwrite(offset, sz int) ([]uint8, []uint8) {
 }
 
 // advances head index sz bytes (allowing the bytes to be copied out)
+// / Advhead advances the head index allowing previously written bytes to be read.
 func (cb *Circbuf_t) Advhead(sz int) {
 	if cb.Full() || cb.Left() < sz {
 		panic("advancing full cb")
@@ -241,6 +260,7 @@ func (cb *Circbuf_t) Advhead(sz int) {
 // returns slices referencing the circular buffer [tail+offset, tail+offset+sz)
 // which must be inside [tail, head). returns two slices when the returned
 // buffer wraps.
+// / Rawread returns slices referencing the buffer starting at offset.
 func (cb *Circbuf_t) Rawread(offset int) ([]uint8, []uint8) {
 	if cb.Buf == nil {
 		panic("no lazy allocation for tcp")
@@ -272,6 +292,7 @@ func (cb *Circbuf_t) Rawread(offset int) ([]uint8, []uint8) {
 }
 
 // advances head index sz bytes (allowing the bytes to be copied out)
+// / Advtail advances the tail index after data has been consumed.
 func (cb *Circbuf_t) Advtail(sz int) {
 	if sz != 0 && (cb.Empty() || cb.Used() < sz) {
 		panic("advancing empty cb")
