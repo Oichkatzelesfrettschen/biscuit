@@ -1,3 +1,7 @@
+// Package bnet implements the Biscuit networking stack.
+//
+// The package exposes low-level networking primitives as well as
+// utilities for TCP/IP handling within the Biscuit kernel.
 package bnet
 
 import "fmt"
@@ -104,7 +108,16 @@ func _arp_lookup(ip Ip4_t) (*arprec_t, bool) {
 	return ar, ok
 }
 
-// returns destination mac and error
+/**
+ * @brief Resolve a destination MAC address via ARP.
+ *
+ * The lookup starts on the NIC bound to the source IP and may trigger a new
+ * ARP request if no valid entry exists.
+ *
+ * @param sip Source IPv4 address issuing the request.
+ * @param dip Destination IPv4 address to resolve.
+ * @return Pointer to the resolved MAC address and a negative errno on failure.
+ */
 func Arp_resolve(sip, dip Ip4_t) (*Mac_t, defs.Err_t) {
 	nic, ok := Nic_lookup(sip)
 	if !ok {
@@ -228,6 +241,11 @@ func net_arp(pkt [][]uint8, tlen int) {
 	}
 }
 
+/**
+ * @brief Collection of network routes.
+ *
+ * Holds subnet information and the default gateway used by the routing logic.
+ */
 type routes_t struct {
 	// sorted (ascending order) slice of bit number of least significant
 	// bit in each subnet mask
@@ -360,7 +378,12 @@ func (r *routes_t) lookup(dip Ip4_t) (Ip4_t, Ip4_t, defs.Err_t) {
 	return r.defgw.myip, r.defgw.ip, 0
 }
 
-// RCU protected routing table
+/**
+ * @brief RCU protected routing table.
+ *
+ * Provides thread-safe updates and lookups of routes using reader-writer
+ * coordination.
+ */
 type routetbl_t struct {
 	// lock for RCU writers
 	sync.Mutex
@@ -437,6 +460,11 @@ func (rt *routetbl_t) Lookup(dip Ip4_t) (Ip4_t, Ip4_t, defs.Err_t) {
 	return a, b, c
 }
 
+/**
+ * @brief Global routing table.
+ *
+ * Thread-safe container for network routes.
+ */
 var Routetbl routetbl_t
 
 type rstmsg_t struct {
@@ -1482,6 +1510,11 @@ func (tt *tcptimers_t) _tocancel(tl *tcptlist_t, tw *timerwheel_t) {
 	tw.torem(tl)
 }
 
+/**
+ * @brief TCP transmission control block.
+ *
+ * Maintains state for an active TCP connection.
+ */
 type Tcptcb_t struct {
 	// l protects everything except for the following which can be read
 	// without the lock: dead, rxdone, txdone, and the head/tail indicies
@@ -1875,7 +1908,7 @@ func (tc *Tcptcb_t) _acktime(sendnow bool) {
 	if canwait {
 		// delay at most 500ms
 		now := Fastmillis()
-		if now < tc.remack.last + 500 {
+		if now < tc.remack.last+500 {
 			if !tc.remack.tstart {
 				tc.remack.tstart = true
 				bigtw.tosched_ack(tc)
@@ -1903,6 +1936,9 @@ type millis_t uint
 
 const Secondms millis_t = 1000
 
+/**
+ * @brief Return a fast monotonic time in milliseconds.
+ */
 func Fastmillis() millis_t {
 	ns := millis_t(runtime.Nanotime())
 	return ns / 1000000
@@ -1924,7 +1960,7 @@ func (tc *Tcptcb_t) seg_maybe() {
 	segged := false
 	now := Fastmillis()
 	for i := 0; i < len(tc.snd.tsegs.segs); i++ {
-		if now < tc.snd.tsegs.segs[i].when + Secondms {
+		if now < tc.snd.tsegs.segs[i].when+Secondms {
 			continue
 		}
 		seq := tc.snd.tsegs.segs[i].seq
@@ -2040,14 +2076,14 @@ func (tc *Tcptcb_t) _txtimeout_start(now millis_t) {
 		// XXXPANIC
 		if nts < tc.remseg.target {
 			fmt.Printf("** timeout shrink! %v\n",
-				tc.remseg.target - nts)
+				tc.remseg.target-nts)
 		}
 		return
 	}
 	tc.remseg.tstart = true
 	tc.remseg.target = nts
 	// XXX rto calculation
-	deadline := nts + Secondms * 5
+	deadline := nts + Secondms*5
 	if now > deadline {
 		fmt.Printf("** timeouts are shat upon!\n")
 		return
@@ -2440,7 +2476,7 @@ func (tc *Tcptcb_t) lwingrow(dlen int) {
 		tc.rcv.win = uint16(left)
 		tc.sched_ack()
 		tc.ack_now()
-	} else if left - oldwin >= mss {
+	} else if left-oldwin >= mss {
 		tc.rcv.win = uint16(left)
 		tc.sched_ack()
 		tc.ack_maybe()
@@ -2863,6 +2899,11 @@ func _port_closed(tcph *Tcphdr_t, k tcpkey_t) {
 }
 
 // active connect fops
+/**
+ * @brief File descriptor operations for active TCP connections.
+ *
+ * Wraps a TCP control block to implement the fdops interface.
+ */
 type Tcpfops_t struct {
 	// tcb must always be non-nil
 	tcb     *Tcptcb_t
@@ -3575,6 +3616,12 @@ var nics struct {
 	m *map[Ip4_t]nic_i
 }
 
+/**
+ * @brief Insert a NIC for an IP address.
+ *
+ * @param ip  Local IP address bound to the NIC.
+ * @param n   NIC implementation to register.
+ */
 func Nic_insert(ip Ip4_t, n nic_i) {
 	nics.l.Lock()
 	defer nics.l.Unlock()
@@ -3593,6 +3640,12 @@ func Nic_insert(ip Ip4_t, n nic_i) {
 	atomic.StorePointer(dst, p)
 }
 
+/**
+ * @brief Retrieve a NIC by local IP address.
+ *
+ * @param lip Local IP address associated with the NIC.
+ * @return    The NIC instance and a flag indicating success.
+ */
 func Nic_lookup(lip Ip4_t) (nic_i, bool) {
 	pa := (*unsafe.Pointer)(unsafe.Pointer(&nics.m))
 	mappy := *(*map[Ip4_t]nic_i)(atomic.LoadPointer(pa))
@@ -3600,8 +3653,15 @@ func Nic_lookup(lip Ip4_t) (nic_i, bool) {
 	return nic, ok
 }
 
-// network stack processing begins here. pkt references DMA memory and will be
-// clobbered once net_start returns to the caller.
+/**
+ * @brief Entry point for incoming packets.
+ *
+ * Processes a packet captured from a NIC. The packet data resides in DMA
+ * buffers and may be modified during processing.
+ *
+ * @param pkt  Scatter/gather buffers containing the packet.
+ * @param tlen Total length of the packet.
+ */
 func Net_start(pkt [][]uint8, tlen int) {
 	// header should always be fully contained in the first slice
 	buf := pkt[0]
@@ -3675,6 +3735,13 @@ func netchk() {
 	}
 }
 
+/**
+ * @brief Initialize networking subsystems.
+ *
+ * Sets up timers, routing structures and launches protocol daemons.
+ *
+ * @param pm Page allocator used for network buffers.
+ */
 func Net_init(pm mem.Page_i) {
 	pagemem = pm
 	netchk()
@@ -4004,6 +4071,9 @@ func (l *lo_t) Lmac() *Mac_t {
 	return &l.mac
 }
 
+/**
+ * @brief Dump debugging information for the network stack.
+ */
 func Netdump() {
 	fmt.Printf("net dump\n")
 	tcpcons.l.Lock()

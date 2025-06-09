@@ -6,7 +6,8 @@
 /src/runtime/z*
 /src/tags
 
-/test/
+/test/*
+!/test/go.mod
 /doc
 .DS_Store
 *.[56789ao]
