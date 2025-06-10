@@ -33,7 +33,12 @@ must be built with Go 1.10.1 instead of a modern Go toolchain.
 To compile the old runtime using a recent system Go, the `setup.sh` script
 downloads the latest Go release when no local Go installation is found. This
 bootstrap compiler only builds the Biscuit runtime and is not used to build
-kernel code.
+kernel code.  Running `./setup.sh` installs a comprehensive FixIt Toolkit using
+APT, pip, and npm packages, automatically searching for and installing any
+`tmux`-related utilities. It also refreshes the package cache and discovers Go
+packages for building, debugging, testing, and fuzzing via `apt-cache`,
+installing any found modules. The script then builds the runtime, kernel,
+documentation, and tests automatically.
 
 Biscuit used to build on Linux and OpenBSD, but probably only builds on Linux
 currently. You must build Biscuit's modified Go runtime before building

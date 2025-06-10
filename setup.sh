@@ -24,13 +24,14 @@ export GO111MODULE=off
 ## @var packages
 #  @brief APT packages required by Biscuit (no duplicates).
 packages=(
-  aflplusplus         # Fuzzing engine
+  afl++              # Fuzzing engine
   bpfcc-tools         # BPF compiler collection
+  build-essential     # GCC and related build tools
   clang               # LLVM C/C++ compiler
   clang-format        # Code formatter
   coq                 # Proof assistant
   curl                # HTTP download tool
-  ctags               # Code tagging
+  universal-ctags     # Code tagging
   cmake               # Build system generator
   doxygen             # API doc generator
   doxygen-doc         # HTML manuals
@@ -42,8 +43,8 @@ packages=(
   graphviz            # Graph visualizer
   graphviz-doc        # Graphviz manuals
   libgraphviz-dev     # Development libraries
-  python3-graphviz    # Python bindings
-  python3-pygraphviz  # Python interface
+  linux-tools-generic # Kernel perf events
+  libpcap-dev         # libpcap headers
   htop                # Process monitor
   jq                  # JSON processor
   lld                 # LLVM linker
@@ -60,15 +61,39 @@ packages=(
   python3-sphinx-rtd-theme # ReadTheDocs theme
   python3-venv        # Virtual env support
   qemu-system-x86     # QEMU emulator
+  qemu-utils          # QEMU disk utilities
+  qemu-nox            # Headless QEMU binary
   shellcheck          # Shell script linter
   ssh                 # Secure shell client
   strace              # Syscall tracer
   systemtap           # Kernel tracing
   tcpdump             # Packet capture
+  tmux                # Terminal multiplexer
+  cloc               # Source code line counter
   valgrind            # Memory debugger
   wget                # HTTP download fallback
-  linux-tools-generic # Kernel perf events
-  libpcap-dev         # libpcap headers
+  tlaplus             # Tools for TLA+ specifications
+)
+
+## @var pip_packages
+#  @brief Python packages installed via pip.
+pip_packages=(
+  mypy             # Static typing
+  flake8           # Linting
+  black            # Code formatter
+  isort            # Import sorting
+  pytest           # Test runner
+  coverage         # Test coverage reports
+  breathe          # Doxygen bridge for Sphinx
+  sphinx-rtd-theme # Read the Docs theme
+)
+
+## @var npm_packages
+#  @brief Node packages installed globally with npm.
+npm_packages=(
+  eslint    # JS linter
+  prettier  # Code formatter
+  typescript # TypeScript compiler
 )
 
 ###############################################################################
@@ -151,51 +176,8 @@ need_install() {
 }
 
 #
-# @brief  Install all missing packages.
-# @details Uses the detected package manager for minimal installs
-# Required packages for the build.
-packages=(
-  qemu-system-x86   # QEMU emulator for running Biscuit
-  qemu-utils        # QEMU disk utilities
-  qemu-nox          # Headless QEMU binary
-  build-essential   # GCC and related build tools
-  git               # Version control
-  gdb               # Debugger
-  clang             # Additional compiler for fuzzing or linting
-  clang-format      # Code formatting tool
-  lld               # LLVM linker used by some build scripts
-  llvm              # LLVM utilities such as objdump
-  valgrind          # Memory debugging
-  strace            # System call tracing
-  ltrace            # Library call tracing
-  cmake             # Build configuration tool
-  python3           # Python required for some build scripts
-  python3-pip       # Python package installer
-  doxygen           # Documentation generator
-  doxygen-doc       # HTML manuals
-  doxygen-gui       # GUI frontend
-  doxygen-latex     # LaTeX/PDF output
-  graphviz          # Graph visualizer
-  graphviz-doc      # Graphviz manuals
-  libgraphviz-dev   # Development libraries
-  python3-graphviz  # Python bindings
-  python3-pygraphviz # Python interface
-  python3-sphinx    # Sphinx documentation tool
-  sphinx-doc        # Extra HTML manuals
-  python3-sphinx-rtd-theme # ReadTheDocs theme
-  tmux              # Terminal multiplexer
-  cloc              # Source code line counter
-  nodejs            # Node runtime
-  npm               # Node package manager
-  curl              # Preferred tool for downloading Go bootstrap
-  wget              # Fallback download tool
-  coq               # Coq proof assistant
-  tlaplus           # Tools for TLA+ specifications
-)
-/**
- * @brief  Install all missing APT packages.
- * @details Uses non-interactive, no-install-recommends for minimal installs :contentReference[oaicite:7]{index=7}
- */
+# @brief  Install all missing APT packages.
+# @details Uses non-interactive, no-install-recommends for minimal installs :contentReference[oaicite:7]{index=7}
 install_packages() {
   detect_package_manager
   local missing=()
@@ -209,6 +191,79 @@ install_packages() {
   fi
 
   pkg_update || log_error "package database update failed"
+  for pkg in "${missing[@]}"; do
+    pkg_install "$pkg" && log "Installed $pkg" || log_error "Failed to install $pkg"
+  done
+}
+
+##
+# @brief  Install Python packages with pip.
+# @details Ensures the packages in @ref pip_packages are installed for the
+#          current user.
+install_pip_packages() {
+  if ! command -v pip3 >/dev/null; then
+    log "pip3 not found; skipping Python packages"
+    return
+  fi
+  log "Installing Python packages..."
+  pip3 install --user --upgrade "${pip_packages[@]}" >/dev/null 2>&1 &&
+    log "Python packages installed" ||
+    log_error "Failed to install Python packages"
+}
+
+##
+# @brief  Install Node packages globally via npm.
+# @details Ensures @ref npm_packages are available for tooling.
+install_npm_packages() {
+  if ! command -v npm >/dev/null; then
+    log "npm not found; skipping Node packages"
+    return
+  fi
+  log "Installing Node packages..."
+  npm install -g "${npm_packages[@]}" >/dev/null 2>&1 &&
+    log "Node packages installed" ||
+    log_error "Failed to install Node packages"
+}
+
+##
+# @brief Install all tmux-related packages available via apt.
+# @details Searches apt-cache for packages prefixed with "tmux" and installs
+#          them using @ref pkg_install.
+install_tmux_packages() {
+  if ! command -v apt-cache >/dev/null; then
+    log "apt-cache not available; skipping tmux extras"
+    return
+  fi
+  local tmux_pkgs
+  tmux_pkgs=$(apt-cache search '^tmux' | awk '{print $1}')
+  local missing=()
+  for pkg in $tmux_pkgs; do
+    need_install "$pkg" && missing+=("$pkg")
+  done
+  [ ${#missing[@]} -eq 0 ] && { log "All tmux packages installed"; return; }
+  for pkg in "${missing[@]}"; do
+    pkg_install "$pkg" && log "Installed $pkg" || log_error "Failed to install $pkg"
+  done
+}
+
+##
+# @brief Install extra Go packages discovered via apt-cache.
+# @details Updates apt cache and installs packages with build, debug,
+#          test, or fuzz keywords in their name.
+install_go_extras() {
+  detect_package_manager
+  if ! command -v apt-cache >/dev/null; then
+    need_install apt && pkg_install apt || return
+  fi
+  pkg_update
+  log "Searching for Go build/debug/test/fuzz packages..."
+  local go_pkgs
+  go_pkgs=$(apt-cache search 'go' | grep -Ei '(golang|go-).*\<(build|debug|test|fuzz)\>' | awk '{print $1}')
+  local missing=()
+  for pkg in $go_pkgs; do
+    need_install "$pkg" && missing+=("$pkg")
+  done
+  [ ${#missing[@]} -eq 0 ] && { log "All Go extras installed"; return; }
   for pkg in "${missing[@]}"; do
     pkg_install "$pkg" && log "Installed $pkg" || log_error "Failed to install $pkg"
   done
@@ -306,16 +361,8 @@ build_runtime() {
     log_error "Runtime build failed"
 }
 
-#
-# @brief  Build Biscuit kernel & userland.
-# /
-# Install Python and Node utilities used for testing and linting.
-if command -v pip3 >/dev/null; then
-  pip3 install --user --upgrade mypy flake8 pytest breathe sphinx-rtd-theme >/dev/null 2>&1 || true
-fi
-/**
- * @brief  Build Biscuit kernel & userland.
- */
+##
+# @brief Build Biscuit kernel & userland.
 build_biscuit() {
   log "Building Biscuit..."
   GOPATH="$(pwd)/biscuit" GO111MODULE=off make -C biscuit > /dev/null 2>&1 &&
@@ -334,10 +381,26 @@ build_docs() {
     log_error "Docs build failed"
 }
 
+##
+# @brief Run Go tests across all modules.
+# @details Executes `go test -v ./...` and logs failures.
+run_tests() {
+  log "Running Go tests..."
+  if go test -v ./...; then
+    log "Tests passed"
+  else
+    log_error "Tests failed"
+  fi
+}
+
 ###############################################################################
 # Main execution
 ###############################################################################
 install_packages
+install_pip_packages
+install_npm_packages
+install_tmux_packages
+install_go_extras
 
 if command -v go > /dev/null; then
   export GOROOT_BOOTSTRAP="$(go env GOROOT)"
@@ -352,3 +415,4 @@ update_go_modules
 build_runtime
 build_biscuit
 build_docs
+run_tests
