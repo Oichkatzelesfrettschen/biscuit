@@ -6,6 +6,7 @@ import "unsafe"
 
 import "defs"
 
+// / Tnote_t stores per-thread state used by the runtime.
 type Tnote_t struct {
 	// XXX "alive" should be "terminated"
 	State    interface{}
@@ -21,19 +22,23 @@ type Tnote_t struct {
 	}
 }
 
+// / Doomed reports whether the thread is marked as doomed.
 func (t *Tnote_t) Doomed() bool {
 	return t.Isdoomed
 }
 
+// / Threadinfo_t tracks all thread notes.
 type Threadinfo_t struct {
 	Notes map[defs.Tid_t]*Tnote_t
 	sync.Mutex
 }
 
+// / Init initializes the thread info map.
 func (t *Threadinfo_t) Init() {
 	t.Notes = make(map[defs.Tid_t]*Tnote_t)
 }
 
+// / Current returns the current thread note.
 func Current() *Tnote_t {
 	_p := runtime.Gptr()
 	if _p == nil {
@@ -43,6 +48,7 @@ func Current() *Tnote_t {
 	return ret
 }
 
+// / SetCurrent installs p as the current thread note.
 func SetCurrent(p *Tnote_t) {
 	if p == nil {
 		panic("nuts")
@@ -54,6 +60,7 @@ func SetCurrent(p *Tnote_t) {
 	runtime.Setgptr(_p)
 }
 
+// / ClearCurrent removes the current thread note.
 func ClearCurrent() {
 	if runtime.Gptr() == nil {
 		panic("nuts")

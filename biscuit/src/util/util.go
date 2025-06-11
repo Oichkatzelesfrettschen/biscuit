@@ -4,7 +4,6 @@ package util
 import "unsafe"
 
 // / Min returns the smaller of a and b.
-// /
 // / \param a first value
 // / \param b second value
 // / \return the smaller of a and b.
@@ -16,7 +15,6 @@ func Min(a, b int) int {
 }
 
 // / Rounddown aligns v down to the nearest multiple of b.
-// /
 // / \param v value to align
 // / \param b alignment boundary
 // / \return v rounded down to a multiple of b.
@@ -25,7 +23,6 @@ func Rounddown(v int, b int) int {
 }
 
 // / Roundup aligns v up to the nearest multiple of b.
-// /
 // / \param v value to align
 // / \param b alignment boundary
 // / \return v rounded up to a multiple of b.
@@ -34,7 +31,6 @@ func Roundup(v int, b int) int {
 }
 
 // / Readn reads n bytes from a starting at offset off and returns the value.
-// /
 // / \param a byte slice to read from
 // / \param n number of bytes to read
 // / \param off starting offset within a
@@ -61,7 +57,6 @@ func Readn(a []uint8, n int, off int) int {
 }
 
 // / Writen writes val using sz bytes into a starting at offset off.
-// /
 // / \param a destination slice
 // / \param sz number of bytes to write
 // / \param off starting offset
