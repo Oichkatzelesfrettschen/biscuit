@@ -21,6 +21,8 @@ func (cb *Circbuf_t) Bufsz() int {
 }
 
 /// Set provides an existing byte slice and page allocator.
+///
+
 /// Parameters:
 ///   nb  - backing byte slice.
 ///   did - initial head index.
@@ -34,9 +36,12 @@ func (cb *Circbuf_t) Set(nb []uint8, did int, m mem.Page_i) {
 }
 
 /// Cb_init lazily allocates a backing page when required.
+///
 /// Parameters:
 ///   sz - buffer size in bytes.
 ///   m  - page allocator.
+///
+
 /// Returns ENOMEM on allocation failure.
 func (cb *Circbuf_t) Cb_init(sz int, m mem.Page_i) defs.Err_t {
 	bufmax := int(mem.PGSIZE)
@@ -53,6 +58,8 @@ func (cb *Circbuf_t) Cb_init(sz int, m mem.Page_i) defs.Err_t {
 }
 
 /// Cb_init_phys supplies a preallocated page backing the buffer.
+///
+
 /// Parameters:
 ///   v   - byte slice mapping the page.
 ///   p_pg- physical page address.
@@ -78,6 +85,8 @@ func (cb *Circbuf_t) Cb_release() {
 }
 
 /// Cb_ensure guarantees that the buffer is allocated.
+///
+
 /// Return value:
 ///   defs.Err_t - ENOMEM if allocation fails.
 func (cb *Circbuf_t) Cb_ensure() defs.Err_t {
@@ -121,6 +130,8 @@ func (cb *Circbuf_t) Used() int {
 }
 
 /// Copyin reads from src into the circular buffer.
+///
+
 /// Return values:
 ///   int       - bytes written.
 ///   defs.Err_t- error code on failure.
@@ -168,6 +179,8 @@ func (cb *Circbuf_t) Copyout(dst fdops.Userio_i) (int, defs.Err_t) {
 }
 
 /// Copyout_n writes up to max bytes of the buffer to dst.
+///
+
 /// Return values:
 ///   int       - bytes written.
 ///   defs.Err_t- error code on failure.

@@ -9,8 +9,8 @@ import "defs"
 import "mem"
 import "util"
 
-// / Bsp_apic_id records the APIC identifier of the bootstrap processor.
-// / It is set during Bsp_init and used when routing interrupts.
+/// Bsp_apic_id records the APIC identifier of the bootstrap processor.
+/// It is set during Bsp_init and used when routing interrupts.
 var Bsp_apic_id int
 
 const apic_debug bool = false
@@ -30,16 +30,16 @@ func lap_id() int {
 	return int(lapaddr[0x20/4] >> 24)
 }
 
-// / Bsp_init captures the bootstrap processor's APIC ID.
-// /
-// / This function must run early during boot and references the
-// / package-level variable `Bsp_apic_id`.
+/// Bsp_init captures the bootstrap processor's APIC ID.
+///
+/// This function must run early during boot and references the
+/// package-level variable `Bsp_apic_id`.
 func Bsp_init() {
 	Bsp_apic_id = lap_id()
 	dbg("BSP APIC ID: %#x\n", Bsp_apic_id)
 }
 
-// / Apic is the singleton instance managing the I/O APIC registers.
+/// Apic is the singleton instance managing the I/O APIC registers.
 var Apic apic_t
 
 type apic_t struct {
@@ -164,12 +164,12 @@ func (ap *apic_t) reg_write(reg int, v uint32) {
 	runtime.Popcli(fl)
 }
 
-// / Irq_unmask enables delivery of the given IRQ line.
-// /
-// / Parameters:
-// /   irq - interrupt line to unmask.
-// /
-// / References global variable `Apic` for register access.
+/// Irq_unmask enables delivery of the given IRQ line.
+///
+/// Parameters:
+///   irq - interrupt line to unmask.
+///
+/// References global variable `Apic` for register access.
 func (ap *apic_t) Irq_unmask(irq int) {
 	if irq < 0 || irq > ap.npins {
 		panic("irq_unmask: bad irq")
@@ -184,12 +184,12 @@ func (ap *apic_t) Irq_unmask(irq int) {
 
 // XXX nosplit because called from trapstub. this can go away when we have a
 // LAPIC that supports EOI broadcast suppression.
-// / Irq_mask disables delivery of the given IRQ line.
-// /
-// / Parameters:
-// /   irq - interrupt line to mask.
-// /
-// / Uses global `Apic` for register access.
+/// Irq_mask disables delivery of the given IRQ line.
+///
+/// Parameters:
+///   irq - interrupt line to mask.
+///
+/// Uses global `Apic` for register access.
 //
 //go:nosplit
 func (ap *apic_t) Irq_mask(irq int) {
@@ -258,12 +258,12 @@ func (ap *apic_t) dump() {
 	}
 }
 
-// / Acpi_attach parses ACPI tables and initializes the I/O APIC.
-// /
-// / Return value:
-// /   int - number of CPUs discovered.
-// /
-// / References the global variable `Apic` during initialization.
+/// Acpi_attach parses ACPI tables and initializes the I/O APIC.
+///
+/// Return value:
+///   int - number of CPUs discovered.
+///
+/// References the global variable `Apic` during initialization.
 func Acpi_attach() int {
 	rsdp, ok := _acpi_scan()
 	if !ok {

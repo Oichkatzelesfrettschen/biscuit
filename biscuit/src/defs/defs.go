@@ -1,9 +1,9 @@
 package defs
 
-// / Inum_t represents an inode number.
+/// Inum_t represents an inode number.
 type Inum_t int
 
-// / Tid_t identifies a thread within the system.
+/// Tid_t identifies a thread within the system.
 type Tid_t int
 
 const (
