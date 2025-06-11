@@ -78,8 +78,12 @@ type Vmregion_t struct {
 	}
 }
 
-// / Filepage returns the file page backing va. The file system
-// / increases the reference count on success.
+// / Filepage retrieves the file-backed page corresponding to va.
+// / Steps:
+// /   1. Verify the mapping is file-based.
+// /   2. Translate va into a file offset and request the page via Mmapi.
+// /   3. Return the page pointer and its physical address.
+// / Global state: open count of the backing file may increase.
 func (vmi *Vminfo_t) Filepage(va uintptr) (*mem.Pg_t, mem.Pa_t, defs.Err_t) {
 	if vmi.Mtype != VFILE {
 		panic("must be file mapping")
@@ -93,8 +97,12 @@ func (vmi *Vminfo_t) Filepage(va uintptr) (*mem.Pg_t, mem.Pa_t, defs.Err_t) {
 	return mmapi[0].Pg, mmapi[0].Phys, 0
 }
 
-// / Ptefor returns the page table entry pointer for va in pmap,
-// / allocating intermediate tables as necessary.
+// / Ptefor returns the page-table entry pointer for va within pmap.
+// / Steps:
+// /   1. Allocate intermediate tables on first use when vmi.pch is nil.
+// /   2. Calculate the entry offset and ensure it is valid.
+// /   3. Return the pointer, creating new tables if needed.
+// / Global state: may allocate new page tables in pmap.
 func (vmi *Vminfo_t) Ptefor(pmap *mem.Pmap_t, va uintptr) (*mem.Pa_t, bool) {
 	if vmi.pch == nil {
 		bva := int(vmi.Pgn) << PGSHIFT
@@ -273,14 +281,22 @@ func (m *Vmregion_t) _clear(vmi *Vminfo_t, pglen int) {
 	}
 }
 
-// / Clear closes all file mappings and resets the region set.
+// / Clear closes all file-backed mappings and resets bookkeeping.
+// / Steps:
+// /   1. Iterate over all mappings to decrement map counts.
+// /   2. Close files when their map count reaches zero.
+// / Global state: modifies map counts and may close files.
 func (m *Vmregion_t) Clear() {
 	m.Iter(func(vmi *Vminfo_t) {
 		m._clear(vmi, vmi.Pglen)
 	})
 }
 
-// / Lookup returns the mapping containing the given virtual address.
+// / Lookup returns the VMA covering the provided virtual address.
+// / Steps:
+// /   1. Convert va to a page number and search the tree.
+// /   2. Return the mapping when found or nil otherwise.
+// / Global state: none; performs a read-only search.
 func (m *Vmregion_t) Lookup(va uintptr) (*Vminfo_t, bool) {
 	pgn := va >> PGSHIFT
 	n := m.rb.lookup(pgn)
@@ -311,7 +327,13 @@ func (m *Vmregion_t) _copy1(par, src *Rbn_t) *Rbn_t {
 	return ret
 }
 
-// / Copy duplicates all mappings and returns a new Vmregion_t.
+// / Copy duplicates all mappings for fork or snapshot.
+// / Steps:
+// /   1. Recursively clone the region tree, allocating new mfile objects
+// /      for file-backed regions.
+// /   2. Reopen files to maintain reference counts.
+// /   3. Return a new Vmregion_t mirroring the current one.
+// / Global state: increases open counts on mapped files.
 func (m *Vmregion_t) Copy() Vmregion_t {
 	var ret Vmregion_t
 	ret._pglen, ret.Novma = m._pglen, m.Novma
@@ -374,12 +396,17 @@ func (m *Vmregion_t) _iter1(n *Rbn_t, f func(*Vminfo_t)) {
 	m._iter1(n.r, f)
 }
 
-// / Iter walks every mapping in order and invokes f.
+// / Iter walks each mapping in ascending address order and invokes f.
+// / Steps:
+// /   1. Use _iter1 to recursively traverse the red-black tree.
+// /   2. Invoke the supplied callback for each VMA.
+// / Global state: none; read-only iteration.
 func (m *Vmregion_t) Iter(f func(*Vminfo_t)) {
 	m._iter1(m.rb.root, f)
 }
 
-// / Pglen returns the total number of pages mapped.
+// / Pglen returns the total number of pages currently mapped.
+// / Global state: none; reads an internal counter.
 func (m *Vmregion_t) Pglen() int {
 	return m._pglen
 }
@@ -439,8 +466,13 @@ func (m *Vmregion_t) end() uintptr {
 	return last << PGSHIFT
 }
 
-// / Remove unmaps the specified range from the region set. novma limits
-// / the number of VMA objects that may remain.
+// / Remove unmaps a range from the region set while respecting a VMA limit.
+// / Steps:
+// /   1. Locate the mapping and adjust reference counts.
+// /   2. Delete the node if the entire mapping is removed.
+// /   3. Trim mappings when removing from an end.
+// /   4. Split mappings when removing from the middle.
+// / Global state: updates total pages and may allocate or free VMAs.
 func (m *Vmregion_t) Remove(start, len int, novma uint) defs.Err_t {
 	pgn := uintptr(start) >> PGSHIFT
 	pglen := util.Roundup(len, mem.PGSIZE) >> PGSHIFT
