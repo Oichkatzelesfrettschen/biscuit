@@ -14,8 +14,8 @@ import "ustr"
 
 import "util"
 
-// / Vm_t represents a process address space. The mutex protects
-// / modifications to Vmregion, Pmap, and P_pmap.
+/// Vm_t represents a process address space.
+/// The embedded mutex protects modifications to Vmregion, Pmap and P_pmap.
 type Vm_t struct {
 	// lock for vmregion, pmpages, pmap, and p_pmap
 	sync.Mutex
@@ -29,8 +29,8 @@ type Vm_t struct {
 	pgfltaken bool
 }
 
-// / Lock_pmap acquires the address space mutex and marks that a page
-// / fault is being handled.
+/// Lock_pmap acquires the address space mutex and marks that a page
+/// fault is in progress.
 func (as *Vm_t) Lock_pmap() {
 	// useful for finding deadlock bugs with one cpu
 	//if p.pgfltaken {
@@ -40,23 +40,23 @@ func (as *Vm_t) Lock_pmap() {
 	as.pgfltaken = true
 }
 
-// / Unlock_pmap releases the address space mutex after page table
-// / manipulation is complete.
+/// Unlock_pmap releases the address space mutex once page-table
+/// manipulation is complete.
 func (as *Vm_t) Unlock_pmap() {
 	as.pgfltaken = false
 	as.Unlock()
 }
 
-// / Lockassert_pmap panics if the address space mutex is not held.
+/// Lockassert_pmap panics if the address space mutex is not held.
 func (as *Vm_t) Lockassert_pmap() {
 	if !as.pgfltaken {
 		panic("pgfl lock must be held")
 	}
 }
 
-// / Userdmap8_inner returns a slice mapping of the user address at va.
-// / When k2u is true the memory will be prepared for a kernel write.
-// / It returns the mapped slice or an error code.
+/// Userdmap8_inner maps the user virtual address `va` into a byte slice.
+/// If `k2u` is true, the memory is prepared for kernel writes.
+/// It returns the mapped slice and an error code.
 func (as *Vm_t) Userdmap8_inner(va int, k2u bool) ([]uint8, defs.Err_t) {
 	as.Lockassert_pmap()
 
@@ -111,8 +111,8 @@ func (as *Vm_t) _userdmap8(va int, k2u bool) ([]uint8, defs.Err_t) {
 	return ret, err
 }
 
-// / Userdmap8r maps the user address for reading and returns the
-// / resulting slice or an error.
+/// Userdmap8r maps the user address `va` for reading and returns the
+/// resulting slice or an error code.
 func (as *Vm_t) Userdmap8r(va int) ([]uint8, defs.Err_t) {
 	return as._userdmap8(va, false)
 }
@@ -125,8 +125,8 @@ func (as *Vm_t) usermapped(va, n int) bool {
 	return ok
 }
 
-// / Userreadn reads n bytes from the user address va and returns the
-// / value and any error encountered.
+/// Userreadn reads `n` bytes from user address `va`.
+/// It returns the value read and an error code.
 func (as *Vm_t) Userreadn(va, n int) (int, defs.Err_t) {
 	as.Lock_pmap()
 	a, b := as.userreadn_inner(va, n)
@@ -157,8 +157,8 @@ func (as *Vm_t) userreadn_inner(va, n int) (int, defs.Err_t) {
 	return ret, 0
 }
 
-// / Userwriten writes n bytes of val to the user address va. It
-// / returns an error code if the copy fails.
+/// Userwriten writes `n` bytes of `val` to user address `va`.
+/// It returns an error code if the copy fails.
 func (as *Vm_t) Userwriten(va, n, val int) defs.Err_t {
 	if n > 8 {
 		panic("large n")
@@ -178,8 +178,9 @@ func (as *Vm_t) Userwriten(va, n, val int) defs.Err_t {
 	return 0
 }
 
-// / Userstr copies a NUL terminated string from user space up to
-// / lenmax bytes. It returns the copied string and an error code.
+/// Userstr copies a NUL terminated string from user space starting at
+/// `uva`. Up to `lenmax` bytes are copied. It returns the copied
+/// string and an error code.
 func (as *Vm_t) Userstr(uva int, lenmax int) (ustr.Ustr, defs.Err_t) {
 	if lenmax < 0 {
 		return nil, 0
@@ -212,8 +213,8 @@ func (as *Vm_t) Userstr(uva int, lenmax int) (ustr.Ustr, defs.Err_t) {
 	}
 }
 
-// / Usertimespec reads a timeval structure from user memory at va
-// / and returns both the duration and time value.
+/// Usertimespec reads a `timespec` structure from user memory at `va`.
+/// It returns the represented duration, the time value and any error.
 func (as *Vm_t) Usertimespec(va int) (time.Duration, time.Time, defs.Err_t) {
 	var zt time.Time
 	secs, err := as.Userreadn(va, 8)
@@ -233,8 +234,8 @@ func (as *Vm_t) Usertimespec(va int) (time.Duration, time.Time, defs.Err_t) {
 	return tot, t, 0
 }
 
-// / K2user copies src into the user virtual address space starting at
-// / uva. The copy may be partial if the region is not fully mapped.
+/// K2user copies `src` into the user virtual address space starting at
+/// `uva`. The copy may be partial if the region is not fully mapped.
 func (as *Vm_t) K2user(src []uint8, uva int) defs.Err_t {
 	as.Lock_pmap()
 	ret := as.K2user_inner(src, uva)
@@ -266,8 +267,8 @@ func (as *Vm_t) K2user_inner(src []uint8, uva int) defs.Err_t {
 	return 0
 }
 
-// / User2k copies len(dst) bytes from the user virtual address uva
-// / into dst. It returns an error code if the read fails.
+/// User2k copies len(dst) bytes from user address `uva` into `dst`.
+/// It returns an error code if the copy fails.
 func (as *Vm_t) User2k(dst []uint8, uva int) defs.Err_t {
 	as.Lock_pmap()
 	ret := as.User2k_inner(dst, uva)
@@ -294,6 +295,8 @@ func (as *Vm_t) User2k_inner(dst []uint8, uva int) defs.Err_t {
 	return 0
 }
 
+/// Unusedva_inner returns the lowest unused user virtual address greater
+/// than or equal to `startva` that can hold `len` bytes.
 func (as *Vm_t) Unusedva_inner(startva, len int) int {
 	as.Lockassert_pmap()
 	if len < 0 || len > 1<<48 {
@@ -312,16 +315,17 @@ func (as *Vm_t) Unusedva_inner(startva, len int) int {
 	return ret
 }
 
+/// _numtoapicid translates a CPU ID to its APIC ID for TLB shootdowns.
 var _numtoapicid func(int) uint32
 
-// / Cpumap records a helper that converts CPU IDs to APIC IDs for
-// / TLB shootdown broadcast.
+/// Cpumap records the helper used to convert CPU IDs to APIC IDs for
+/// TLB shootdown broadcasts.
 func Cpumap(f func(int) uint32) {
 	_numtoapicid = f
 }
 
-// / Tlbshoot invalidates pgcount pages starting at startva on all CPUs
-// / that have this pmap loaded.
+/// Tlbshoot invalidates `pgcount` pages starting at `startva` on all
+/// CPUs that currently have this pmap loaded.
 func (as *Vm_t) Tlbshoot(startva uintptr, pgcount int) {
 	if pgcount == 0 {
 		return
@@ -345,9 +349,9 @@ func (as *Vm_t) Tlbshoot(startva uintptr, pgcount int) {
 	tlb_shootdown(as.P_pmap, tlbp, startva, pgcount)
 }
 
-// / Sys_pgfault resolves a page fault for the address space as at the
-// / given fault address with the provided error code. It returns an
-// / error code describing the result.
+/// Sys_pgfault resolves a page fault for address space `as` at
+/// `faultaddr` using the supplied error code `ecode` and mapping `vmi`.
+/// It returns an error code describing the result.
 func Sys_pgfault(as *Vm_t, vmi *Vminfo_t, faultaddr, ecode uintptr) defs.Err_t {
 	isguard := vmi.Perms == 0
 	iswrite := ecode&uintptr(PTE_W) != 0
@@ -493,9 +497,9 @@ func Sys_pgfault(as *Vm_t, vmi *Vminfo_t, faultaddr, ecode uintptr) defs.Err_t {
 // to flush TLB). the second return value is false if the page insertion failed
 // due to lack of user pages. p_pg's ref count is increased so the caller can
 // simply Physmem.Refdown()
-// / Page_insert maps the physical page p_pg at va with perms. The
-// / function returns whether an existing mapping was replaced and
-// / whether the insertion succeeded.
+/// Page_insert maps the physical page `p_pg` at virtual address `va`
+/// with the provided permissions. It returns whether an existing
+/// mapping was replaced and whether the insertion succeeded.
 func (as *Vm_t) Page_insert(va int, p_pg mem.Pa_t, perms mem.Pa_t,
 	vempty bool, pte *mem.Pa_t) (bool, bool) {
 	return as._page_insert(va, p_pg, perms, vempty, true, pte)
@@ -505,8 +509,8 @@ func (as *Vm_t) Page_insert(va int, p_pg mem.Pa_t, perms mem.Pa_t,
 // to flush TLB). the second return value is false if the page insertion failed
 // due to lack of user pages. p_pg's ref count is increased so the caller can
 // simply Physmem.Refdown()
-// / Blockpage_insert adds a page mapping without increasing the
-// / reference count of p_pg. It is used for block pages.
+/// Blockpage_insert adds a page mapping without increasing the
+/// reference count of `p_pg`. It is used for block pages.
 func (as *Vm_t) Blockpage_insert(va int, p_pg mem.Pa_t, perms mem.Pa_t,
 	vempty bool, pte *mem.Pa_t) (bool, bool) {
 	return as._page_insert(va, p_pg, perms, vempty, false, pte)
@@ -544,8 +548,8 @@ func (as *Vm_t) _page_insert(va int, p_pg mem.Pa_t, perms mem.Pa_t,
 	return ninval, true
 }
 
-// / Page_remove unmaps the page at va from this address space and
-// / returns true if a mapping was removed.
+/// Page_remove unmaps the page at virtual address `va` from this
+/// address space and reports whether a mapping was removed.
 func (as *Vm_t) Page_remove(va int) bool {
 	as.Lockassert_pmap()
 	remmed := false
@@ -562,9 +566,9 @@ func (as *Vm_t) Page_remove(va int) bool {
 	return remmed
 }
 
-// / Pgfault handles a page fault triggered by tid for the given fault
-// / address and error code. It returns an error describing the
-// / outcome.
+/// Pgfault handles a page fault triggered by thread `tid` for the fault
+/// address `fa` and error code `ecode`. It returns an error describing
+/// the outcome.
 func (as *Vm_t) Pgfault(tid defs.Tid_t, fa, ecode uintptr) defs.Err_t {
 	as.Lock_pmap()
 	vmi, ok := as.Vmregion.Lookup(fa)
@@ -577,8 +581,8 @@ func (as *Vm_t) Pgfault(tid defs.Tid_t, fa, ecode uintptr) defs.Err_t {
 	return ret
 }
 
-// / Uvmfree releases all user mappings and page tables associated
-// / with this address space.
+/// Uvmfree releases all user mappings and page tables associated with
+/// this address space.
 func (as *Vm_t) Uvmfree() {
 	Uvmfree_inner(as.Pmap, as.P_pmap, &as.Vmregion)
 	// Dec_pmap could free the pmap itself. thus it must come after
@@ -588,32 +592,32 @@ func (as *Vm_t) Uvmfree() {
 	as.Vmregion.Clear()
 }
 
-// / Vmadd_anon creates a private anonymous mapping at the given
-// / virtual address range with the supplied permissions.
+/// Vmadd_anon creates a private anonymous mapping starting at `start`
+/// spanning `len` bytes with the provided permissions.
 func (as *Vm_t) Vmadd_anon(start, len int, perms mem.Pa_t) {
 	vmi := as._mkvmi(VANON, start, len, perms, 0, nil, nil)
 	as.Vmregion.insert(vmi)
 }
 
-// / Vmadd_file maps a region backed by the provided file operations
-// / at the specified offset. The mapping may be shared or private
-// / depending on the supplied operations.
+/// Vmadd_file maps a region backed by `fops` at file offset `foff` with
+/// permissions `perms`. The mapping may be shared or private depending
+/// on the provided operations.
 func (as *Vm_t) Vmadd_file(start, len int, perms mem.Pa_t, fops fdops.Fdops_i,
 	foff int) {
 	vmi := as._mkvmi(VFILE, start, len, perms, foff, fops, nil)
 	as.Vmregion.insert(vmi)
 }
 
-// / Vmadd_shareanon inserts a shared anonymous mapping with the given
-// / permissions.
+/// Vmadd_shareanon inserts a shared anonymous mapping starting at
+/// `start` covering `len` bytes with the supplied permissions.
 func (as *Vm_t) Vmadd_shareanon(start, len int, perms mem.Pa_t) {
 	vmi := as._mkvmi(VSANON, start, len, perms, 0, nil, nil)
 	as.Vmregion.insert(vmi)
 }
 
-// / Vmadd_sharefile creates a shared file-backed mapping using fops
-// / starting at the given offset. The unpin callback is used when
-// / unmapping pages.
+/// Vmadd_sharefile creates a shared file-backed mapping using `fops`
+/// starting at offset `foff`. The `unpin` callback is invoked when pages
+/// are unmapped.
 func (as *Vm_t) Vmadd_sharefile(start, len int, perms mem.Pa_t, fops fdops.Fdops_i,
 	foff int, unpin mem.Unpin_i) {
 	vmi := as._mkvmi(VFILE, start, len, perms, foff, fops, unpin)
@@ -654,8 +658,8 @@ func (as *Vm_t) _mkvmi(mt mtype_t, start, len int, perms mem.Pa_t, foff int,
 	return ret
 }
 
-// / Mkuserbuf allocates and initializes a Userbuf_t referencing user
-// / memory starting at userva.
+/// Mkuserbuf allocates and initializes a Userbuf_t referencing user
+/// memory starting at `userva` with length `len`.
 func (as *Vm_t) Mkuserbuf(userva, len int) *Userbuf_t {
 	ret := &Userbuf_t{}
 	ret.ub_init(as, userva, len)

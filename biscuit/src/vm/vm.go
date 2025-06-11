@@ -24,7 +24,7 @@ const PTE_PS mem.Pa_t = 1 << 7
 const PTE_COW mem.Pa_t = 1 << 9
 const PTE_WASCOW mem.Pa_t = 1 << 10
 
-// / Constants describing page size and address calculations.
+/// Constants describing page size and address calculations.
 const PGSIZEW uintptr = uintptr(mem.PGSIZE)
 const PGSHIFT uint = 12
 const PGOFFSET mem.Pa_t = 0xfff
@@ -34,9 +34,10 @@ const PTE_ADDR mem.Pa_t = PGMASK
 const PTE_FLAGS mem.Pa_t = (PTE_P | PTE_W | PTE_U | PTE_PCD | PTE_PS | PTE_COW |
 	PTE_WASCOW)
 
+/// mtype_t enumerates the kinds of supported memory mappings.
 type mtype_t uint
 
-// / Types of supported memory mappings.
+/// Types of supported memory mappings.
 const (
 	VANON mtype_t = 1 << iota
 	// shared or private file
@@ -45,7 +46,7 @@ const (
 	VSANON mtype_t = 1 << iota
 )
 
-// / Mfile_t tracks a file-backed mapping within an address space.
+/// Mfile_t tracks a file-backed mapping within an address space.
 type Mfile_t struct {
 	mfops fdops.Fdops_i
 	unpin mem.Unpin_i
@@ -53,7 +54,7 @@ type Mfile_t struct {
 	mapcount int
 }
 
-// / Vminfo_t describes a contiguous range of virtual memory.
+/// Vminfo_t describes a contiguous range of virtual memory.
 type Vminfo_t struct {
 	Mtype mtype_t
 	Pgn   uintptr
@@ -67,7 +68,7 @@ type Vminfo_t struct {
 	pch []mem.Pa_t
 }
 
-// / Vmregion_t manages all virtual memory mappings using a red-black tree.
+/// Vmregion_t manages all virtual memory mappings using a red-black tree.
 type Vmregion_t struct {
 	rb     Rbh_t
 	_pglen int
@@ -78,8 +79,8 @@ type Vmregion_t struct {
 	}
 }
 
-// / Filepage returns the file page backing va. The file system
-// / increases the reference count on success.
+/// Filepage returns the file page backing `va`. The file system
+/// increases the reference count on success.
 func (vmi *Vminfo_t) Filepage(va uintptr) (*mem.Pg_t, mem.Pa_t, defs.Err_t) {
 	if vmi.Mtype != VFILE {
 		panic("must be file mapping")
@@ -93,8 +94,8 @@ func (vmi *Vminfo_t) Filepage(va uintptr) (*mem.Pg_t, mem.Pa_t, defs.Err_t) {
 	return mmapi[0].Pg, mmapi[0].Phys, 0
 }
 
-// / Ptefor returns the page table entry pointer for va in pmap,
-// / allocating intermediate tables as necessary.
+/// Ptefor returns the page table entry pointer for `va` in `pmap`,
+/// allocating intermediate tables as necessary.
 func (vmi *Vminfo_t) Ptefor(pmap *mem.Pmap_t, va uintptr) (*mem.Pa_t, bool) {
 	if vmi.pch == nil {
 		bva := int(vmi.Pgn) << PGSHIFT
@@ -273,14 +274,14 @@ func (m *Vmregion_t) _clear(vmi *Vminfo_t, pglen int) {
 	}
 }
 
-// / Clear closes all file mappings and resets the region set.
+/// Clear closes all file mappings and resets the region set.
 func (m *Vmregion_t) Clear() {
 	m.Iter(func(vmi *Vminfo_t) {
 		m._clear(vmi, vmi.Pglen)
 	})
 }
 
-// / Lookup returns the mapping containing the given virtual address.
+/// Lookup returns the mapping containing the given virtual address `va`.
 func (m *Vmregion_t) Lookup(va uintptr) (*Vminfo_t, bool) {
 	pgn := va >> PGSHIFT
 	n := m.rb.lookup(pgn)
@@ -311,7 +312,7 @@ func (m *Vmregion_t) _copy1(par, src *Rbn_t) *Rbn_t {
 	return ret
 }
 
-// / Copy duplicates all mappings and returns a new Vmregion_t.
+/// Copy duplicates all mappings and returns a new Vmregion_t.
 func (m *Vmregion_t) Copy() Vmregion_t {
 	var ret Vmregion_t
 	ret._pglen, ret.Novma = m._pglen, m.Novma
@@ -374,12 +375,12 @@ func (m *Vmregion_t) _iter1(n *Rbn_t, f func(*Vminfo_t)) {
 	m._iter1(n.r, f)
 }
 
-// / Iter walks every mapping in order and invokes f.
+/// Iter walks every mapping in order and invokes `f`.
 func (m *Vmregion_t) Iter(f func(*Vminfo_t)) {
 	m._iter1(m.rb.root, f)
 }
 
-// / Pglen returns the total number of pages mapped.
+/// Pglen returns the total number of pages mapped.
 func (m *Vmregion_t) Pglen() int {
 	return m._pglen
 }
@@ -439,8 +440,8 @@ func (m *Vmregion_t) end() uintptr {
 	return last << PGSHIFT
 }
 
-// / Remove unmaps the specified range from the region set. novma limits
-// / the number of VMA objects that may remain.
+/// Remove unmaps the specified range from the region set. `novma`
+/// limits the number of VMA objects that may remain.
 func (m *Vmregion_t) Remove(start, len int, novma uint) defs.Err_t {
 	pgn := uintptr(start) >> PGSHIFT
 	pglen := util.Roundup(len, mem.PGSIZE) >> PGSHIFT

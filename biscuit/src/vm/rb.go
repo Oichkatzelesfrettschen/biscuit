@@ -1,19 +1,19 @@
 package vm
 
-// / Rbc_t represents a red-black color.
+/// Rbc_t represents a red-black color.
 type Rbc_t int
 
 const (
-	RED   Rbc_t = iota
-	BLACK Rbc_t = iota
+	RED   Rbc_t = iota // node is red
+	BLACK Rbc_t = iota // node is black
 )
 
-// / Rbh_t is a red-black tree head containing the root node.
+/// Rbh_t is a red-black tree head containing the root node.
 type Rbh_t struct {
 	root *Rbn_t
 }
 
-// / Rbn_t is a node in the virtual memory red-black tree.
+/// Rbn_t is a node in the virtual memory red-black tree.
 type Rbn_t struct {
 	p   *Rbn_t
 	r   *Rbn_t
