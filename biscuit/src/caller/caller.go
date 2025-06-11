@@ -4,6 +4,10 @@ import "fmt"
 import "runtime"
 import "sync"
 
+// / Callerdump prints the call stack starting at the given depth.
+// /
+// / Parameters:
+// /   start - stack frame to begin printing.
 func Callerdump(start int) {
 	i := start
 	s := ""
@@ -28,6 +32,8 @@ func Callerdump(start int) {
 
 // a type for detecting the first call from each distinct path of ancestor
 // callers.
+// / Distinct_caller_t tracks whether a call chain has been seen before.
+// / Fields are protected by the embedded mutex.
 type Distinct_caller_t struct {
 	sync.Mutex
 	Enabled bool
@@ -48,6 +54,7 @@ func (dc *Distinct_caller_t) _pchash(pcs []uintptr) uintptr {
 	return ret
 }
 
+// / Len returns the number of unique caller paths recorded.
 func (dc *Distinct_caller_t) Len() int {
 	dc.Lock()
 	ret := len(dc.did)
@@ -55,8 +62,8 @@ func (dc *Distinct_caller_t) Len() int {
 	return ret
 }
 
-// returns true if the caller path is unique and is not white-listed and the
-// caller path as a string.
+// / Distinct reports whether the current call chain is new.
+// / It returns true along with a formatted stack trace when not seen before.
 func (dc *Distinct_caller_t) Distinct() (bool, string) {
 	dc.Lock()
 	defer dc.Unlock()

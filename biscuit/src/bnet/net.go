@@ -108,16 +108,17 @@ func _arp_lookup(ip Ip4_t) (*arprec_t, bool) {
 	return ar, ok
 }
 
-/**
- * @brief Resolve a destination MAC address via ARP.
- *
- * The lookup starts on the NIC bound to the source IP and may trigger a new
- * ARP request if no valid entry exists.
- *
- * @param sip Source IPv4 address issuing the request.
- * @param dip Destination IPv4 address to resolve.
- * @return Pointer to the resolved MAC address and a negative errno on failure.
- */
+// / Arp_resolve resolves a destination MAC address via ARP.
+// /
+// / Parameters:
+// /   sip - source IPv4 address issuing the request.
+// /   dip - destination IPv4 address to resolve.
+// /
+// / Return values:
+// /   *Mac_t      - resolved MAC address if successful.
+// /   defs.Err_t  - zero on success or negative errno.
+// /
+// / This function references the global ARP table `arptbl`.
 func Arp_resolve(sip, dip Ip4_t) (*Mac_t, defs.Err_t) {
 	nic, ok := Nic_lookup(sip)
 	if !ok {
@@ -460,11 +461,8 @@ func (rt *routetbl_t) Lookup(dip Ip4_t) (Ip4_t, Ip4_t, defs.Err_t) {
 	return a, b, c
 }
 
-/**
- * @brief Global routing table.
- *
- * Thread-safe container for network routes.
- */
+// / Routetbl holds the global routing table used by the network stack.
+// / It is safe for concurrent access and modified during Net_init.
 var Routetbl routetbl_t
 
 type rstmsg_t struct {
@@ -1510,11 +1508,9 @@ func (tt *tcptimers_t) _tocancel(tl *tcptlist_t, tw *timerwheel_t) {
 	tw.torem(tl)
 }
 
-/**
- * @brief TCP transmission control block.
- *
- * Maintains state for an active TCP connection.
- */
+// / Tcptcb_t maintains the state of an active TCP connection.
+// /
+// / No package globals are referenced directly by this structure.
 type Tcptcb_t struct {
 	// l protects everything except for the following which can be read
 	// without the lock: dead, rxdone, txdone, and the head/tail indicies
@@ -1936,9 +1932,12 @@ type millis_t uint
 
 const Secondms millis_t = 1000
 
-/**
- * @brief Return a fast monotonic time in milliseconds.
- */
+// / Fastmillis returns a fast monotonic time in milliseconds.
+// /
+// / No parameters are required.
+// /
+// / Return value:
+// /   millis_t - monotonic milliseconds.
 func Fastmillis() millis_t {
 	ns := millis_t(runtime.Nanotime())
 	return ns / 1000000
@@ -2899,17 +2898,21 @@ func _port_closed(tcph *Tcphdr_t, k tcpkey_t) {
 }
 
 // active connect fops
-/**
- * @brief File descriptor operations for active TCP connections.
- *
- * Wraps a TCP control block to implement the fdops interface.
- */
+// / Tcpfops_t implements the fdops interface for TCP sockets.
+// / It wraps a Tcptcb_t instance.
 type Tcpfops_t struct {
 	// tcb must always be non-nil
 	tcb     *Tcptcb_t
 	options defs.Fdopt_t
 }
 
+// / Set initializes the file operations with a TCP control block.
+// /
+// / Parameters:
+// /   tcb - control block backing this descriptor.
+// /   opt - file descriptor options.
+// /
+// / No return values.  The global TCP connection table is unaffected.
 func (tf *Tcpfops_t) Set(tcb *Tcptcb_t, opt defs.Fdopt_t) {
 	tf.tcb = tcb
 	tf.options = opt
@@ -2925,6 +2928,10 @@ func (tf *Tcpfops_t) _closed() (defs.Err_t, bool) {
 	return 0, true
 }
 
+// / Close decrements the open count on the associated TCP connection.
+// /
+// / Return value:
+// /   defs.Err_t - zero on success or a negative errno.
 func (tf *Tcpfops_t) Close() defs.Err_t {
 	tf.tcb.tcb_lock()
 	defer tf.tcb.tcb_unlock()
@@ -2949,24 +2956,36 @@ func (tf *Tcpfops_t) Close() defs.Err_t {
 	return 0
 }
 
+// / Fstat populates a Stat_t structure for the socket.
+// /
+// / Parameters:
+// /   st - output stat structure to fill.
+// /
+// / Returns zero on success.
 func (tf *Tcpfops_t) Fstat(st *stat.Stat_t) defs.Err_t {
 	sockmode := defs.Mkdev(2, 0)
 	st.Wmode(sockmode)
 	return 0
 }
 
+// / Lseek is unsupported for sockets and always returns ESPIPE.
 func (tf *Tcpfops_t) Lseek(int, int) (int, defs.Err_t) {
 	return 0, -defs.ESPIPE
 }
 
+// / Mmapi is not implemented for sockets and returns EINVAL.
 func (tf *Tcpfops_t) Mmapi(int, int, bool) ([]mem.Mmapinfo_t, defs.Err_t) {
 	return nil, -defs.EINVAL
 }
 
+// / Pathi panics as sockets do not reside in the filesystem.
 func (tf *Tcpfops_t) Pathi() defs.Inum_t {
 	panic("tcp socket cwd")
 }
 
+// / Read copies data from the socket into dst.
+// /
+// / Returns the number of bytes read or an error.
 func (tf *Tcpfops_t) Read(dst fdops.Userio_i) (int, defs.Err_t) {
 	tf.tcb.tcb_lock()
 	if err, ok := tf._closed(); !ok {
@@ -3002,6 +3021,9 @@ func (tf *Tcpfops_t) Read(dst fdops.Userio_i) (int, defs.Err_t) {
 	return read, err
 }
 
+// / Reopen increments the open count on the socket.
+// /
+// / Returns zero on success.
 func (tf *Tcpfops_t) Reopen() defs.Err_t {
 	tf.tcb.tcb_lock()
 	tf.tcb.openc++
@@ -3009,6 +3031,9 @@ func (tf *Tcpfops_t) Reopen() defs.Err_t {
 	return 0
 }
 
+// / Write sends data from src over the socket.
+// /
+// / Returns bytes written or an error.
 func (tf *Tcpfops_t) Write(src fdops.Userio_i) (int, defs.Err_t) {
 	tf.tcb.tcb_lock()
 	if err, ok := tf._closed(); !ok {
@@ -3053,18 +3078,23 @@ func (tf *Tcpfops_t) Truncate(newlen uint) defs.Err_t {
 	return -defs.EINVAL
 }
 
+// / Pread is unsupported for sockets and returns ESPIPE.
 func (tf *Tcpfops_t) Pread(dst fdops.Userio_i, offset int) (int, defs.Err_t) {
 	return 0, -defs.ESPIPE
 }
 
+// / Pwrite is unsupported for sockets and returns ESPIPE.
 func (tf *Tcpfops_t) Pwrite(src fdops.Userio_i, offset int) (int, defs.Err_t) {
 	return 0, -defs.ESPIPE
 }
 
+// / Accept is not implemented for TCP client sockets and panics.
 func (tf *Tcpfops_t) Accept(fdops.Userio_i) (fdops.Fdops_i, int, defs.Err_t) {
 	panic("no imp")
 }
 
+// / Bind assigns a local address to the socket.
+// / Returns an error if binding fails.
 func (tf *Tcpfops_t) Bind(saddr []uint8) defs.Err_t {
 	fam := util.Readn(saddr, 1, 1)
 	lport := Ntohs(Be16(util.Readn(saddr, 2, 2)))
@@ -3110,6 +3140,8 @@ func (tf *Tcpfops_t) Bind(saddr []uint8) defs.Err_t {
 	return ret
 }
 
+// / Connect initiates a TCP connection to the remote peer.
+// / Blocks unless the socket is non-blocking.
 func (tf *Tcpfops_t) Connect(saddr []uint8) defs.Err_t {
 	tf.tcb.tcb_lock()
 	defer tf.tcb.tcb_unlock()
@@ -3149,6 +3181,8 @@ func (tf *Tcpfops_t) Connect(saddr []uint8) defs.Err_t {
 	return ret
 }
 
+// / Listen puts the socket into listen mode.
+// / Returns a new fdops implementation for accepting connections.
 func (tf *Tcpfops_t) Listen(backlog int) (fdops.Fdops_i, defs.Err_t) {
 	tf.tcb.tcb_lock()
 	defer tf.tcb.tcb_unlock()
@@ -3181,6 +3215,7 @@ func (tf *Tcpfops_t) Listen(backlog int) (fdops.Fdops_i, defs.Err_t) {
 }
 
 // XXX read/write should be wrapper around recvmsg/sendmsg
+// / Sendmsg sends a message from src. Control messages are not supported.
 func (tf *Tcpfops_t) Sendmsg(src fdops.Userio_i,
 	toaddr []uint8, cmsg []uint8, flags int) (int, defs.Err_t) {
 	if len(cmsg) != 0 {
@@ -3189,6 +3224,7 @@ func (tf *Tcpfops_t) Sendmsg(src fdops.Userio_i,
 	return tf.Write(src)
 }
 
+// / Recvmsg receives data into dst. Control messages are ignored.
 func (tf *Tcpfops_t) Recvmsg(dst fdops.Userio_i,
 	fromsa fdops.Userio_i, cmsg fdops.Userio_i, flag int) (int, int, int, defs.Msgfl_t, defs.Err_t) {
 	if cmsg.Totalsz() != 0 {
@@ -3217,6 +3253,7 @@ func (tf *Tcpfops_t) _pollchk(ev fdops.Ready_t) fdops.Ready_t {
 	return ret
 }
 
+// / Pollone tests the socket for readiness and optionally blocks.
 func (tf *Tcpfops_t) Pollone(pm fdops.Pollmsg_t) (fdops.Ready_t, defs.Err_t) {
 	ready := tf._pollchk(pm.Events)
 	var err defs.Err_t
@@ -3231,6 +3268,7 @@ func (tf *Tcpfops_t) Pollone(pm fdops.Pollmsg_t) (fdops.Ready_t, defs.Err_t) {
 	return ready, err
 }
 
+// / Fcntl implements socket-specific fcntl operations.
 func (tf *Tcpfops_t) Fcntl(cmd, opt int) int {
 	tf.tcb.tcb_lock()
 	defer tf.tcb.tcb_unlock()
@@ -3246,6 +3284,7 @@ func (tf *Tcpfops_t) Fcntl(cmd, opt int) int {
 	}
 }
 
+// / Getsockopt returns socket options into bufarg or intarg.
 func (tf *Tcpfops_t) Getsockopt(opt int, bufarg fdops.Userio_i,
 	intarg int) (int, defs.Err_t) {
 	tf.tcb.tcb_lock()
@@ -3274,6 +3313,7 @@ func (tf *Tcpfops_t) Getsockopt(opt int, bufarg fdops.Userio_i,
 	}
 }
 
+// / Setsockopt sets socket options from src or intarg.
 func (tf *Tcpfops_t) Setsockopt(lev, opt int, src fdops.Userio_i,
 	intarg int) defs.Err_t {
 	tf.tcb.tcb_lock()
@@ -3326,6 +3366,7 @@ func (tf *Tcpfops_t) Setsockopt(lev, opt int, src fdops.Userio_i,
 	return ret
 }
 
+// / Shutdown disables further send and/or receive operations.
 func (tf *Tcpfops_t) Shutdown(read, write bool) defs.Err_t {
 	tf.tcb.tcb_lock()
 	ret := tf.tcb.shutdown(read, write)
@@ -3616,12 +3657,13 @@ var nics struct {
 	m *map[Ip4_t]nic_i
 }
 
-/**
- * @brief Insert a NIC for an IP address.
- *
- * @param ip  Local IP address bound to the NIC.
- * @param n   NIC implementation to register.
- */
+// / Nic_insert registers a NIC implementation for an IP address.
+// /
+// / Parameters:
+// /   ip - local IP address bound to the NIC.
+// /   n  - NIC implementation to register.
+// /
+// / No values are returned.  Global map `nics` is updated.
 func Nic_insert(ip Ip4_t, n nic_i) {
 	nics.l.Lock()
 	defer nics.l.Unlock()
@@ -3640,12 +3682,14 @@ func Nic_insert(ip Ip4_t, n nic_i) {
 	atomic.StorePointer(dst, p)
 }
 
-/**
- * @brief Retrieve a NIC by local IP address.
- *
- * @param lip Local IP address associated with the NIC.
- * @return    The NIC instance and a flag indicating success.
- */
+// / Nic_lookup retrieves a NIC by its bound IP address.
+// /
+// / Parameters:
+// /   lip - local IP associated with the NIC.
+// /
+// / Return values:
+// /   nic_i - the NIC implementation if found.
+// /   bool  - true on success.
 func Nic_lookup(lip Ip4_t) (nic_i, bool) {
 	pa := (*unsafe.Pointer)(unsafe.Pointer(&nics.m))
 	mappy := *(*map[Ip4_t]nic_i)(atomic.LoadPointer(pa))
@@ -3653,15 +3697,11 @@ func Nic_lookup(lip Ip4_t) (nic_i, bool) {
 	return nic, ok
 }
 
-/**
- * @brief Entry point for incoming packets.
- *
- * Processes a packet captured from a NIC. The packet data resides in DMA
- * buffers and may be modified during processing.
- *
- * @param pkt  Scatter/gather buffers containing the packet.
- * @param tlen Total length of the packet.
- */
+// / Net_start is the entry point for processing an incoming packet.
+// /
+// / Parameters:
+// /   pkt  - scatter/gather buffers containing the packet.
+// /   tlen - total packet length.
 func Net_start(pkt [][]uint8, tlen int) {
 	// header should always be fully contained in the first slice
 	buf := pkt[0]
@@ -3735,13 +3775,10 @@ func netchk() {
 	}
 }
 
-/**
- * @brief Initialize networking subsystems.
- *
- * Sets up timers, routing structures and launches protocol daemons.
- *
- * @param pm Page allocator used for network buffers.
- */
+// / Net_init initializes networking subsystems.
+// /
+// / Parameters:
+// /   pm - page allocator used for network buffers.
 func Net_init(pm mem.Page_i) {
 	pagemem = pm
 	netchk()
@@ -4071,9 +4108,9 @@ func (l *lo_t) Lmac() *Mac_t {
 	return &l.mac
 }
 
-/**
- * @brief Dump debugging information for the network stack.
- */
+// / Netdump prints debugging information for the network stack.
+// /
+// / It does not return any value and reads global TCP connection state.
 func Netdump() {
 	fmt.Printf("net dump\n")
 	tcpcons.l.Lock()
