@@ -40,6 +40,7 @@ const (
 // (like allocate, fmt.Print, or use panic) since trapstub() runs in interrupt
 // context and thus may run concurrently with code manipulating the same state.
 // since trapstub() runs on the per-cpu interrupt stack, it must be nosplit.
+//
 //go:nosplit
 func trapstub(tf *[defs.TFSIZE]uintptr) {
 
@@ -359,7 +360,7 @@ func cpus_start(ncpu int, maxjoin int, hyperthreads bool) {
 	// wait a while for hopefully all APs to join.
 	time.Sleep(500 * time.Millisecond)
 	apcnt = int(atomic.LoadUintptr(&ss[sapcnt]))
-	if apcnt + 1 > runtime.MAXCPUS {
+	if apcnt+1 > runtime.MAXCPUS {
 		panic("fancy computer!")
 	}
 
@@ -375,7 +376,7 @@ func cpus_start(ncpu int, maxjoin int, hyperthreads bool) {
 	// IDs from ACPI, but bhw2's MADT table only includes 8-bit IDs, not
 	// the 32-bit IDs.
 	//fmt.Printf("wait for %v IDs...\n", apcnt)
-	for i := 1; i < apcnt + 1; i++ {
+	for i := 1; i < apcnt+1; i++ {
 		// assumes no AP has an APIC ID of 0...
 		for atomic.LoadUint32(&_cpus.apicids[i]) == 0 {
 		}
@@ -383,9 +384,9 @@ func cpus_start(ncpu int, maxjoin int, hyperthreads bool) {
 
 	topo_crunch(apcnt)
 
-	fmt.Printf("ACPI CPUs %v, found %v APs (%v hyperthreads) across %v " +
-	    "packages\n", ncpu, apcnt, _cpus.nhthreads, _cpus.npackages)
-	cpuperpack := (apcnt + 1)/_cpus.npackages
+	fmt.Printf("ACPI CPUs %v, found %v APs (%v hyperthreads) across %v "+
+		"packages\n", ncpu, apcnt, _cpus.nhthreads, _cpus.npackages)
+	cpuperpack := (apcnt + 1) / _cpus.npackages
 	if !hyperthreads {
 		cpuperpack /= int(_cpus.htmask + 1)
 	}
@@ -409,10 +410,10 @@ func cpus_start(ncpu int, maxjoin int, hyperthreads bool) {
 		}
 	}
 	fmt.Printf("Joining at most %v CPUs %s packages (%s hyperthreads) on %v packages\n",
-	    maxjoin, how, hts, totpacks)
+		maxjoin, how, hts, totpacks)
 
 	availaps := make(map[int]uint32)
-	for i := 1; i < apcnt + 1; i++ {
+	for i := 1; i < apcnt+1; i++ {
 		availaps[i] = _cpus.apicids[i]
 	}
 
@@ -420,11 +421,11 @@ func cpus_start(ncpu int, maxjoin int, hyperthreads bool) {
 	var joinmask uint64
 	// assumes BSP is on package 0
 	packs := map[int]int{int(_cpus.apicids[0] >> _cpus.packageshift): 1}
-	for joinedaps < maxjoin - 1 && len(availaps) != 0 {
+	for joinedaps < maxjoin-1 && len(availaps) != 0 {
 		old := joinedaps
 		for lid, lapid := range availaps {
 			// enable hyper-threads?
-			if !hyperthreads && _cpus.htmask & lapid != 0 {
+			if !hyperthreads && _cpus.htmask&lapid != 0 {
 				continue
 			}
 			var nextpkg int
@@ -471,16 +472,16 @@ func cpus_start(ncpu int, maxjoin int, hyperthreads bool) {
 var _cpus struct {
 	// 32bits2xAPIC IDs, indexed by the corresponding CPU's (arbitrary)
 	// logical ID.
-	apicids		[runtime.MAXCPUS]uint32
+	apicids [runtime.MAXCPUS]uint32
 	// bit n of _joincpus is set iff CPU n is enabled
-	joincpus	uint64
-	apready		uint64
+	joincpus uint64
+	apready  uint64
 
-	htmask		uint32
-	packagemask	uint32
-	packageshift	uint
-	npackages	int
-	nhthreads	int
+	htmask       uint32
+	packagemask  uint32
+	packageshift uint
+	npackages    int
+	nhthreads    int
 }
 
 func topo_crunch(apcnt int) {
@@ -522,10 +523,10 @@ func topo_crunch(apcnt int) {
 	}
 	pkgmask := ^uint32(0) << pkgshift
 	packs := make(map[uint32]bool)
-	for i := 0; i < apcnt + 1; i++ {
+	for i := 0; i < apcnt+1; i++ {
 		id := _cpus.apicids[i]
-		packs[id & pkgmask] = true
-		if id & _cpus.htmask != 0 {
+		packs[id&pkgmask] = true
+		if id&_cpus.htmask != 0 {
 			_cpus.nhthreads++
 		}
 	}
@@ -541,6 +542,7 @@ func topo_crunch(apcnt int) {
 
 // myid is a logical ID starting from 1 (BSP's is 0), not LAPIC ID. They are
 // not necessarily consecutive.
+//
 //go:nosplit
 func ap_entry(myid uint) {
 	_, _, _, apicid := runtime.Cpuid(0xb, 0)
@@ -549,7 +551,7 @@ func ap_entry(myid uint) {
 
 	// all disabled CPUs loop forever here
 	mybit := uint64(1 << myid)
-	for atomic.LoadUint64(&_cpus.joincpus) & mybit == 0 {
+	for atomic.LoadUint64(&_cpus.joincpus)&mybit == 0 {
 		runtime.Htpause()
 	}
 
@@ -1049,21 +1051,21 @@ func cpuchk() {
 		panic("sysenter not supported")
 	}
 
-	avx := cx & (1 << 28) != 0
-	sse3 := cx & (1 << 0) != 0
-	ssse3 := cx & (1 << 9) != 0
-	sse41 := cx & (1 << 19) != 0
-	sse42 := cx & (1 << 20) != 0
+	avx := cx&(1<<28) != 0
+	sse3 := cx&(1<<0) != 0
+	ssse3 := cx&(1<<9) != 0
+	sse41 := cx&(1<<19) != 0
+	sse42 := cx&(1<<20) != 0
 	fmt.Printf("sse3 %v, ssse3 %v, sse41 %v, sse42 %v, avx %v\n", sse3, ssse3, sse41, sse42, avx)
 	if !sse42 {
 		panic("no sse42")
 	}
 
 	_, _, cx, _ = cpuid(1, 0)
-	x2apic := cx & (1 << 21) != 0
+	x2apic := cx&(1<<21) != 0
 	ia32_apic_base_msr := 0x1b
 	apic := runtime.Rdmsr(ia32_apic_base_msr)
-	x2apic_en := apic & (1 << 10) != 0
+	x2apic_en := apic&(1<<10) != 0
 	if x2apic && x2apic_en {
 		panic("x2APIC mode enabled; fix IPI code to use 32 bit destinations")
 	}
@@ -1077,8 +1079,8 @@ func cpuchk() {
 	}
 
 	_, bx, _, _ := cpuid(0x7, 0)
-	bmi1 := bx & 1 << 3 != 0
-	bmi2 := bx & 1 << 8 != 0
+	bmi1 := bx&1<<3 != 0
+	bmi2 := bx&1<<8 != 0
 	fmt.Printf("bmi1 %v, bmi2 %v\n", bmi1, bmi2)
 	objresttest()
 }
@@ -1097,97 +1099,157 @@ func objresttest() {
 	a := &ro{}
 	b := &ro{}
 	runtime.Objsadd(a, b)
-	if sum(b) != 0 { panic("oh shite") }
+	if sum(b) != 0 {
+		panic("oh shite")
+	}
 	b[0] = 1
 	runtime.Objsadd(a, b)
-	if sum(b) != 1 { panic("oh shite") }
-	*a = ro{}; *b = ro{}
+	if sum(b) != 1 {
+		panic("oh shite")
+	}
+	*a = ro{}
+	*b = ro{}
 	for i := range a {
 		b[i] = 1
 	}
 	runtime.Objsadd(a, b)
-	if sum(b) != uint32(len(a)) { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
-	*a = ro{}; *b = ro{}
+	if sum(b) != uint32(len(a)) {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
+	*a = ro{}
+	*b = ro{}
 	for i := range b {
 		a[i] = 1
 	}
 	runtime.Objsadd(a, b)
-	if sum(b) != uint32(len(b)) { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
-	*a = ro{}; *b = ro{}
+	if sum(b) != uint32(len(b)) {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
+	*a = ro{}
+	*b = ro{}
 	for i := range a {
-		if i % 2 == 0 {
+		if i%2 == 0 {
 			a[i] = 1
 		} else {
 			b[i] = 1
 		}
 	}
 	runtime.Objsadd(a, b)
-	if sum(b) != uint32(len(a)) { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
-	*a = ro{}; *b = ro{}
+	if sum(b) != uint32(len(a)) {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
+	*a = ro{}
+	*b = ro{}
 	for i := range a {
 		a[i] = 50
 		b[i] = 31337
 	}
 	runtime.Objsadd(a, b)
-	if sum(b) != 50*24+31337*24 { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
+	if sum(b) != 50*24+31337*24 {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	runtime.Objssub(a, b)
-	if sum(b) != 0 { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
+	if sum(b) != 0 {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	for i := range b {
 		b[i] = 1
 	}
 	runtime.Objssub(a, b)
-	if sum(b) != uint32(len(b)) { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
+	if sum(b) != uint32(len(b)) {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	for i := range b {
 		a[i] = 1
 		b[i] = 1
 	}
 	runtime.Objssub(a, b)
-	if sum(b) != 0 { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
+	if sum(b) != 0 {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	for i := range b {
 		a[i] = 1
 		b[i] = 2
 	}
 	runtime.Objssub(a, b)
-	if sum(b) != uint32(len(a)) { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
+	if sum(b) != uint32(len(a)) {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	for i := range b {
 		a[i] = 1
 	}
 	runtime.Objssub(a, b)
-	if sum(b) != (^uint32(len(a)))+1 { fmt.Printf("SUM %v\n", sum(b)); panic("oh shite") }
+	if sum(b) != (^uint32(len(a)))+1 {
+		fmt.Printf("SUM %v\n", sum(b))
+		panic("oh shite")
+	}
 
-	*a = ro{}; *b = ro{}
-	if ret := runtime.Objscmp(a, b); ret != 0 { fmt.Printf("ret %#x\n", ret); panic("crud") }
+	*a = ro{}
+	*b = ro{}
+	if ret := runtime.Objscmp(a, b); ret != 0 {
+		fmt.Printf("ret %#x\n", ret)
+		panic("crud")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	a[0] = 1
-	if ret := runtime.Objscmp(a, b); ret != 1 { fmt.Printf("ret %#x\n", ret); panic("crud") }
+	if ret := runtime.Objscmp(a, b); ret != 1 {
+		fmt.Printf("ret %#x\n", ret)
+		panic("crud")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	a[1] = 2
-	if ret := runtime.Objscmp(a, b); ret != 2 { fmt.Printf("ret %#x\n", ret); panic("crud") }
+	if ret := runtime.Objscmp(a, b); ret != 2 {
+		fmt.Printf("ret %#x\n", ret)
+		panic("crud")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	a[10] = 2
 	lasti := uint32(len(a) - 1)
 	a[lasti] = 9
-	if ret := runtime.Objscmp(a, b); ret != (1 << 10) | (1 << lasti) { fmt.Printf("ret %#x\n", ret); panic("crud") }
+	if ret := runtime.Objscmp(a, b); ret != (1<<10)|(1<<lasti) {
+		fmt.Printf("ret %#x\n", ret)
+		panic("crud")
+	}
 
-	*a = ro{}; *b = ro{}
+	*a = ro{}
+	*b = ro{}
 	a[10] = 2
 	a[20] = 9
 	b[10] = 3
 	b[20] = 0x2000
-	if ret := runtime.Objscmp(a, b); ret != 0 { fmt.Printf("ret %#x\n", ret); panic("crud") }
+	if ret := runtime.Objscmp(a, b); ret != 0 {
+		fmt.Printf("ret %#x\n", ret)
+		panic("crud")
+	}
 }
 
 func perfsetup() {
@@ -1439,8 +1501,8 @@ func (ip *intelprof_t) prof_init(npmc uint) {
 	cpuevents := func(fam, mod uint, evs map[pmevid_t]pmevent_t) {
 		dispmodel, dispfamily := cpuidfamily()
 		if dispfamily == fam && dispmodel == mod {
-			fmt.Printf("Load CPU performance events for CPU %#x " +
-			    "%#x\n", fam, mod)
+			fmt.Printf("Load CPU performance events for CPU %#x "+
+				"%#x\n", fam, mod)
 			for k, v := range evs {
 				ip.events[k] = v
 			}
@@ -1608,6 +1670,13 @@ var thefs *fs.Fs_t
 
 const diskfs = false
 
+// / main initializes device drivers, CPUs, and the filesystem
+// / before scheduling the initial process.
+// / Major steps:
+// /   1. Set up physical memory and output system details.
+// /   2. Attach hardware devices and configure interrupts.
+// /   3. Start secondary CPUs, mount the filesystem, and launch init.
+// / Global state: populates global device handles and CPU information.
 func main() {
 	res.Kernel = true
 	//runtime.GCDebug(1)
