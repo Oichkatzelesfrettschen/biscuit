@@ -12,7 +12,7 @@ import "res"
 import "ustr"
 import "util"
 
-// / NAME_MAX is the longest valid file name length.
+/// NAME_MAX is the longest valid file name length.
 const NAME_MAX int = 512
 
 var lhits = 0
@@ -30,14 +30,15 @@ func crname(path ustr.Ustr, nilpatherr defs.Err_t) (defs.Err_t, bool) {
 // 0-13,  file name characters
 // 14-21, inode block/offset
 // ...repeated, totaling 23 times
+/// Dirdata_t describes the on-disk directory entry layout.
 type Dirdata_t struct {
-	Data []uint8
+        Data []uint8 /// raw directory data
 }
 
 const (
-	DNAMELEN = 14
-	NDBYTES  = 22
-	NDIRENTS = BSIZE / NDBYTES
+        DNAMELEN = 14            /// maximum name length
+        NDBYTES  = 22            /// directory entry size
+        NDIRENTS = BSIZE / NDBYTES /// entries per block
 )
 
 func doffset(didx int, off int) int {
@@ -47,6 +48,7 @@ func doffset(didx int, off int) int {
 	return NDBYTES*didx + off
 }
 
+/// Filename returns the name stored at the given directory index.
 func (dir *Dirdata_t) Filename(didx int) ustr.Ustr {
 	st := doffset(didx, 0)
 	sl := dir.Data[st : st+DNAMELEN]
@@ -66,6 +68,7 @@ func (dir *Dirdata_t) inodenext(didx int) defs.Inum_t {
 	return defs.Inum_t(v)
 }
 
+/// W_filename writes a filename into the directory entry.
 func (dir *Dirdata_t) W_filename(didx int, fn ustr.Ustr) {
 	st := doffset(didx, 0)
 	sl := dir.Data[st : st+DNAMELEN]
@@ -79,6 +82,7 @@ func (dir *Dirdata_t) W_filename(didx int, fn ustr.Ustr) {
 	}
 }
 
+/// W_inodenext writes the inode number for the entry.
 func (dir *Dirdata_t) W_inodenext(didx int, inum defs.Inum_t) {
 	st := doffset(didx, 14)
 	util.Writen(dir.Data[:], 8, st, int(inum))
