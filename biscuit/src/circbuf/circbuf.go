@@ -4,8 +4,8 @@ import "defs"
 import "fdops"
 import "mem"
 
-// Circbuf_t implements a simple circular buffer used by a single daemon.
-// It is not safe for concurrent use.
+// / Circbuf_t implements a simple circular buffer used by a single daemon.
+// / It is not safe for concurrent use.
 type Circbuf_t struct {
 	mem   mem.Page_i /// page allocator interface
 	Buf   []uint8    /// underlying buffer backing memory
@@ -205,10 +205,10 @@ func (cb *Circbuf_t) Copyout_n(dst fdops.Userio_i, max int) (int, defs.Err_t) {
 	return c, 0
 }
 
-// returns slices referencing the internal circular buffer [head+offset,
-// head+offset+sz) which must be outside [tail, head). returns two slices when
-// the returned buffer wraps.
-// XXX XXX XXX XXX XXX remove arg
+// / returns slices referencing the internal circular buffer [head+offset,
+// / head+offset+sz) which must be outside [tail, head). returns two slices when
+// / the returned buffer wraps.
+// / XXX XXX XXX XXX XXX remove arg
 // / Rawwrite exposes a slice for writing to the buffer without copying.
 // / The returned slices reference the internal buffer and must not overlap
 // / existing user data.
@@ -248,7 +248,7 @@ func (cb *Circbuf_t) Rawwrite(offset, sz int) ([]uint8, []uint8) {
 	return r1, r2
 }
 
-// advances head index sz bytes (allowing the bytes to be copied out)
+// / advances head index sz bytes (allowing the bytes to be copied out)
 // / Advhead advances the head index allowing previously written bytes to be read.
 func (cb *Circbuf_t) Advhead(sz int) {
 	if cb.Full() || cb.Left() < sz {
@@ -257,9 +257,9 @@ func (cb *Circbuf_t) Advhead(sz int) {
 	cb.head += sz
 }
 
-// returns slices referencing the circular buffer [tail+offset, tail+offset+sz)
-// which must be inside [tail, head). returns two slices when the returned
-// buffer wraps.
+// / returns slices referencing the circular buffer [tail+offset, tail+offset+sz)
+// / which must be inside [tail, head). returns two slices when the returned
+// / buffer wraps.
 // / Rawread returns slices referencing the buffer starting at offset.
 func (cb *Circbuf_t) Rawread(offset int) ([]uint8, []uint8) {
 	if cb.Buf == nil {
@@ -291,7 +291,7 @@ func (cb *Circbuf_t) Rawread(offset int) ([]uint8, []uint8) {
 	return r1, r2
 }
 
-// advances head index sz bytes (allowing the bytes to be copied out)
+// / advances head index sz bytes (allowing the bytes to be copied out)
 // / Advtail advances the tail index after data has been consumed.
 func (cb *Circbuf_t) Advtail(sz int) {
 	if sz != 0 && (cb.Empty() || cb.Used() < sz) {
