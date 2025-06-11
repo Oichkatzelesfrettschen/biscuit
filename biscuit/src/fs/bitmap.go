@@ -38,7 +38,7 @@ type bitmap_t struct {
 	last      int
 }
 
-const NFREE = 1000
+const NFREE = 1000 /// number of free block hints
 
 func mkAllocater(fs *Fs_t, start, len int, s storage_i) *bitmap_t {
 	a := &bitmap_t{}

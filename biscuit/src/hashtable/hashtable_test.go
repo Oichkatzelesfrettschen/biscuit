@@ -25,7 +25,7 @@ func fill(t *testing.T, ht hashtable_i, n int) {
 
 const SZ = 10
 
-// / TestSimple exercises basic hashtable operations.
+// /       TestSimple exercises basic hashtable operations.
 func TestSimple(t *testing.T) {
 	ht := MkHash(SZ)
 
@@ -101,7 +101,7 @@ func reader(t *testing.T, ht hashtable_i, done *int32) int {
 	return n
 }
 
-// / TestManyWriter spawns writers concurrently to stress the table.
+// /       TestManyWriter spawns writers concurrently to stress the table.
 func TestManyWriter(t *testing.T) {
 	ht := MkHash(SZ)
 
@@ -150,13 +150,13 @@ func doTestManyReader(ht hashtable_i, t *testing.T) {
 	fmt.Printf("TestManyReader:  %d/s\n", total)
 }
 
-// / TestManyReader runs multiple readers in parallel.
+// /       TestManyReader runs multiple readers in parallel.
 func TestManyReader(t *testing.T) {
 	ht := MkHash(SZ)
 	doTestManyReader(ht, t)
 }
 
-// / TestManyReaderStd validates the standard-map implementation.
+// /       TestManyReaderStd validates the standard-map implementation.
 func TestManyReaderStd(t *testing.T) {
 	ht := MkHashString(SZ)
 	doTestManyReader(ht, t)
@@ -188,19 +188,19 @@ func doTestManyReaderOneWriter(ht hashtable_i, t *testing.T) {
 	fmt.Printf("TestManyReaderOneWriter: reads %d/s writes %d/s\n", nreads, nwrites)
 }
 
-// / TestManyReaderOneWriter mixes readers with a single writer.
+// /       TestManyReaderOneWriter mixes readers with a single writer.
 func TestManyReaderOneWriter(t *testing.T) {
 	ht := MkHash(SZ)
 	doTestManyReaderOneWriter(ht, t)
 }
 
-// / TestManyReaderOneWriterStd tests the map-based table with readers and one writer.
+// /       TestManyReaderOneWriterStd tests the map-based table with readers and one writer.
 func TestManyReaderOneWriterStd(t *testing.T) {
 	ht := MkHashString(SZ)
 	doTestManyReaderOneWriter(ht, t)
 }
 
-// / TestManyReaderOneWriterSyncMap benchmarks sync.Map with readers and writer.
+// /       TestManyReaderOneWriterSyncMap benchmarks sync.Map with readers and writer.
 func TestManyReaderOneWriterSyncMap(t *testing.T) {
 	ht := MkSyncMap(SZ)
 	doTestManyReaderOneWriter(ht, t)
@@ -208,13 +208,13 @@ func TestManyReaderOneWriterSyncMap(t *testing.T) {
 
 // For performance comparisons
 
-// / hashtablestring_t is a simple map based implementation used for comparison.
+// /       hashtablestring_t is a simple map based implementation used for comparison.
 type hashtablestring_t struct {
 	sync.RWMutex
 	table map[string]int
 }
 
-// / MkHashString creates a hashtable backed by a Go map.
+// /       MkHashString creates a hashtable backed by a Go map.
 func MkHashString(size int) *hashtablestring_t {
 	ht := &hashtablestring_t{}
 	ht.table = make(map[string]int, size)
@@ -248,12 +248,12 @@ func (ht *hashtablestring_t) Del(key interface{}) {
 	delete(ht.table, k)
 }
 
-// / SyncMap_t wraps sync.Map for performance comparison.
+// /       SyncMap_t wraps sync.Map for performance comparison.
 type SyncMap_t struct {
 	m sync.Map
 }
 
-// / MkSyncMap instantiates a SyncMap_t.
+// /       MkSyncMap instantiates a SyncMap_t.
 func MkSyncMap(size int) *SyncMap_t {
 	ht := &SyncMap_t{}
 	return ht
