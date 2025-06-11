@@ -33,15 +33,15 @@ func dbg(x string, args ...interface{}) {
 // - CMD: http://www.t13.org/documents/uploadeddocuments/docs2007/d1699r4a-ata8-acs.pdf
 //
 
-// / Ahci exposes the AHCI disk implementation to the kernel.
-// / It is assigned during Ahci_init and referenced by the filesystem layer.
+/// Ahci exposes the AHCI disk implementation to the kernel.
+/// It is assigned during Ahci_init and referenced by the filesystem layer.
 var Ahci fs.Disk_i
 
 type blockmem_t struct {
 }
 
-// / Blockmem provides page management for disk I/O buffers.
-// / It is a package level singleton used by the driver.
+/// Blockmem provides page management for disk I/O buffers.
+/// It is a package level singleton used by the driver.
 var Blockmem = &blockmem_t{}
 
 func (bm *blockmem_t) Alloc() (mem.Pa_t, *mem.Bytepg_t, bool) {
@@ -63,15 +63,15 @@ func (bm *blockmem_t) Refup(pa mem.Pa_t) {
 	mem.Physmem.Refup(pa)
 }
 
-// / Start queues a block request on the AHCI port.
-// /
-// / Parameters:
-// /   req - block device request to issue.
-// /
-// / Return value:
-// /   bool - always true since requests are asynchronous.
-// /
-// / No global variables are referenced.
+/// Start queues a block request on the AHCI port.
+///
+/// Parameters:
+///   req - block device request to issue.
+///
+/// Return value:
+///   bool - always true since requests are asynchronous.
+///
+/// No global variables are referenced.
 func (ahci *ahci_disk_t) Start(req *fs.Bdev_req_t) bool {
 	if ahci.port == nil {
 		panic("nil port")
@@ -80,12 +80,12 @@ func (ahci *ahci_disk_t) Start(req *fs.Bdev_req_t) bool {
 	return true
 }
 
-// / Stats returns driver statistics for debugging.
-// /
-// / Return value:
-// /   string - formatted statistics from the port.
-// /
-// / No global variables are referenced.
+/// Stats returns driver statistics for debugging.
+///
+/// Return value:
+///   string - formatted statistics from the port.
+///
+/// No global variables are referenced.
 func (ahci *ahci_disk_t) Stats() string {
 	if ahci == nil {
 		panic("no adisk")
@@ -457,42 +457,42 @@ const (
 	IDE_FEATURE_RLA_ENA    = 0xAA
 )
 
-// / LD atomically loads a 32-bit value from a MMIO register.
-// /
-// / Parameters:
-// /   f - pointer to memory mapped register.
-// /
-// / Return value:
-// /   uint32 - value read from the register.
+/// LD atomically loads a 32-bit value from a MMIO register.
+///
+/// Parameters:
+///   f - pointer to memory mapped register.
+///
+/// Return value:
+///   uint32 - value read from the register.
 func LD(f *uint32) uint32 {
 	return atomic.LoadUint32(f)
 }
 
-// / LD64 atomically loads a 64-bit value from a register.
-// /
-// / Parameters:
-// /   f - pointer to memory mapped register.
-// /
-// / Returns the 64-bit value read.
+/// LD64 atomically loads a 64-bit value from a register.
+///
+/// Parameters:
+///   f - pointer to memory mapped register.
+///
+/// Returns the 64-bit value read.
 func LD64(f *uint64) uint64 {
 	return atomic.LoadUint64(f)
 }
 
-// / LD32 is an alias of LD kept for clarity.
-// /
-// / Parameters:
-// /   f - pointer to register.
-// /
-// / Returns the 32-bit value read.
+/// LD32 is an alias of LD kept for clarity.
+///
+/// Parameters:
+///   f - pointer to register.
+///
+/// Returns the 32-bit value read.
 func LD32(f *uint32) uint32 {
 	return atomic.LoadUint32(f)
 }
 
-// / ST stores a 32-bit value into a register without using atomic operations.
-// /
-// / Parameters:
-// /   f - pointer to register to update.
-// /   v - value to store.
+/// ST stores a 32-bit value into a register without using atomic operations.
+///
+/// Parameters:
+///   f - pointer to register to update.
+///   v - value to store.
 func ST(f *uint32, v uint32) {
 	// Serial ATA AHCI 1.3.1 spec, section 3: "locked access are not
 	// supported...indeterminite results may occur"
@@ -500,72 +500,72 @@ func ST(f *uint32, v uint32) {
 	runtime.Store32(f, v)
 }
 
-// / ST16 stores a 16-bit value into a register.
-// /
-// / Parameters:
-// /   f - pointer to 16-bit register field.
-// /   v - value to store.
+/// ST16 stores a 16-bit value into a register.
+///
+/// Parameters:
+///   f - pointer to 16-bit register field.
+///   v - value to store.
 func ST16(f *uint16, v uint16) {
 	a := (*uint32)(unsafe.Pointer(f))
 	v32 := LD(a)
 	ST(a, (v32&0xFFFF0000)|uint32(v))
 }
 
-// / LD16 loads a 16-bit register field.
-// /
-// / Parameters:
-// /   f - pointer to 16-bit field.
-// /
-// / Returns the value read.
+/// LD16 loads a 16-bit register field.
+///
+/// Parameters:
+///   f - pointer to 16-bit field.
+///
+/// Returns the value read.
 func LD16(f *uint16) uint16 {
 	a := (*uint32)(unsafe.Pointer(f))
 	v := LD(a)
 	return uint16(v & 0xFFFF)
 }
 
-// / ST64 stores a 64-bit value into a register.
-// /
-// / Parameters:
-// /   f - pointer to register.
-// /   v - value to store.
+/// ST64 stores a 64-bit value into a register.
+///
+/// Parameters:
+///   f - pointer to register.
+///   v - value to store.
 func ST64(f *uint64, v uint64) {
 	//atomic.StoreUint64(f, v)
 	runtime.Store64(f, v)
 }
 
-// / SET sets bits in a register via read-modify-write.
-// /
-// / Parameters:
-// /   f - pointer to register.
-// /   v - bit mask to set.
+/// SET sets bits in a register via read-modify-write.
+///
+/// Parameters:
+///   f - pointer to register.
+///   v - bit mask to set.
 func SET(f *uint32, v uint32) {
 	runtime.Store32(f, LD(f)|v)
 }
 
-// / SET16 sets bits in a 16-bit register field.
-// /
-// / Parameters:
-// /   f - pointer to field.
-// /   v - bits to set.
+/// SET16 sets bits in a 16-bit register field.
+///
+/// Parameters:
+///   f - pointer to field.
+///   v - bits to set.
 func SET16(f *uint16, v uint16) {
 	ST16(f, LD16(f)|v)
 }
 
-// / CLR16 clears bits in a 16-bit register field.
-// /
-// / Parameters:
-// /   f - pointer to field.
-// /   v - bits to clear.
+/// CLR16 clears bits in a 16-bit register field.
+///
+/// Parameters:
+///   f - pointer to field.
+///   v - bits to clear.
 func CLR16(f *uint16, v uint16) {
 	n := LD16(f) & ^v
 	ST16(f, n)
 }
 
-// / CLR clears bits in a register via read-modify-write.
-// /
-// / Parameters:
-// /   f - pointer to register.
-// /   v - bits to clear.
+/// CLR clears bits in a register via read-modify-write.
+///
+/// Parameters:
+///   f - pointer to register.
+///   v - bits to clear.
 func CLR(f *uint32, v uint32) {
 	v32 := LD(f)
 	n := v32 & ^v
@@ -1226,11 +1226,11 @@ func ata_verify() {
 	chk(&f.features119, 119*2)
 }
 
-// / Ahci_init registers the AHCI driver with the PCI subsystem.
-// /
-// / No parameters are required and the function returns no values.
-// / It installs attach_ahci for supported devices and relies on
-// / global variable `Ahci` to expose the discovered disk.
+/// Ahci_init registers the AHCI driver with the PCI subsystem.
+///
+/// No parameters are required and the function returns no values.
+/// It installs attach_ahci for supported devices and relies on
+/// global variable `Ahci` to expose the discovered disk.
 func Ahci_init() {
 	ahci_verify()
 	port_verify()

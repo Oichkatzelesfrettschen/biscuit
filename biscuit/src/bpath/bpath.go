@@ -2,27 +2,27 @@ package bpath
 
 import "ustr"
 
-// / Pathparts_t splits a path into components without extra allocations.
-// / No global variables are referenced.
+/// Pathparts_t splits a path into components without extra allocations.
+/// No global variables are referenced.
 type Pathparts_t struct {
 	path ustr.Ustr
 	loc  int
 }
 
-// / Pp_init initializes the Pathparts iterator with the given path.
-// /
-// / Parameters:
-// /   path - string to iterate over.
+/// Pp_init initializes the Pathparts iterator with the given path.
+///
+/// Parameters:
+///   path - string to iterate over.
 func (pp *Pathparts_t) Pp_init(path ustr.Ustr) {
 	pp.path = path
 	pp.loc = 0
 }
 
-// / Next returns the next component of the path.
-// /
-// / Return values:
-// /   ustr.Ustr - next segment.
-// /   bool      - false when iteration is complete.
+/// Next returns the next component of the path.
+///
+/// Return values:
+///   ustr.Ustr - next segment.
+///   bool      - false when iteration is complete.
 func (pp *Pathparts_t) Next() (ustr.Ustr, bool) {
 	ret := ustr.MkUstr()
 	for len(ret) == 0 {
@@ -41,14 +41,14 @@ func (pp *Pathparts_t) Next() (ustr.Ustr, bool) {
 	return ret, true
 }
 
-// / Sdirname splits a path into directory and file components.
-// /
-// / Parameters:
-// /   path - original path string.
-// /
-// / Return values:
-// /   ustr.Ustr - directory part.
-// /   ustr.Ustr - file name part.
+/// Sdirname splits a path into directory and file components.
+///
+/// Parameters:
+///   path - original path string.
+///
+/// Return values:
+///   ustr.Ustr - directory part.
+///   ustr.Ustr - file name part.
 func Sdirname(path ustr.Ustr) (ustr.Ustr, ustr.Ustr) {
 	fn := path
 	l := len(fn)
@@ -125,13 +125,13 @@ func (canon *canonicalize_t) deltrailingslash() {
 }
 
 // Assume utf encoding of characters
-// / Canonicalize returns a cleaned version of path without ".." or duplicate slashes.
-// /
-// / Parameters:
-// /   path - input path to canonicalize.
-// /
-// / Return value:
-// /   ustr.Ustr - canonicalized path string.
+/// Canonicalize returns a cleaned version of path without ".." or duplicate slashes.
+///
+/// Parameters:
+///   path - input path to canonicalize.
+///
+/// Return value:
+///   ustr.Ustr - canonicalized path string.
 func Canonicalize(path ustr.Ustr) ustr.Ustr {
 	// fmt.Printf("canon: %s\n", path)
 	canon := canonicalize_t{}
