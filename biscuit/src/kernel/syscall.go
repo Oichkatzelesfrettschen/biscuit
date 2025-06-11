@@ -99,6 +99,7 @@ type syscall_t struct {
 
 var sys = &syscall_t{}
 
+/// Syscall handles all process system calls.
 func (s *syscall_t) Syscall(p *proc.Proc_t, tid defs.Tid_t, tf *[defs.TFSIZE]uintptr) int {
 
 	if p.Doomed() {
@@ -269,7 +270,7 @@ var console = &console_t{}
 
 func (c *console_t) Cons_poll(pm fdops.Pollmsg_t) (fdops.Ready_t, defs.Err_t) {
 	cons.pollc <- pm
-	return <- cons.pollret, 0
+	return <-cons.pollret, 0
 }
 
 func (c *console_t) Cons_read(ub fdops.Userio_i, offset int) (int, defs.Err_t) {
@@ -413,6 +414,7 @@ func sys_pause(p *proc.Proc_t) int {
 	return -1
 }
 
+/// Sys_close closes the given file descriptor.
 func (s *syscall_t) Sys_close(p *proc.Proc_t, fdn int) int {
 	fd, ok := p.Fd_del(fdn)
 	if !ok {
@@ -3470,6 +3472,7 @@ func insertargs(p *proc.Proc_t, sargs []ustr.Ustr) (int, int, defs.Err_t) {
 	return len(args), argstart, 0
 }
 
+/// Sys_exit terminates the process with the given status.
 func (s *syscall_t) Sys_exit(p *proc.Proc_t, tid defs.Tid_t, status int) {
 	// set doomed so all other threads die
 	p.Doomall()

@@ -7,63 +7,63 @@ import "unsafe"
 import "util"
 import "fmt"
 
-// / PGSHIFT is the base-2 exponent for the page size.
+/// PGSHIFT is the base-2 exponent for the page size.
 const PGSHIFT uint = 12
 
-// / PGSIZE is the size of a single page in bytes.
+/// PGSIZE is the size of a single page in bytes.
 const PGSIZE int = 1 << PGSHIFT
 
-// / PGOFFSET masks offsets within a page.
+/// PGOFFSET masks offsets within a page.
 const PGOFFSET Pa_t = 0xfff
 
-// / PGMASK masks the page number of an address.
+/// PGMASK masks the page number of an address.
 const PGMASK Pa_t = ^(PGOFFSET)
 
-// / PTE_P marks a page as present.
+/// PTE_P marks a page as present.
 const PTE_P Pa_t = 1 << 0
 
-// / PTE_W marks a page writable.
+/// PTE_W marks a page writable.
 const PTE_W Pa_t = 1 << 1
 
-// / PTE_U marks a page user-accessible.
+/// PTE_U marks a page user-accessible.
 const PTE_U Pa_t = 1 << 2
 
-// / PTE_G marks a global page.
+/// PTE_G marks a global page.
 const PTE_G Pa_t = 1 << 8
 
-// / PTE_PCD disables caching for the page.
+/// PTE_PCD disables caching for the page.
 const PTE_PCD Pa_t = 1 << 4
 
-// / PTE_PS indicates a large page.
+/// PTE_PS indicates a large page.
 const PTE_PS Pa_t = 1 << 7
 
-// / PTE_ADDR extracts the address bits of a PTE.
+/// PTE_ADDR extracts the address bits of a PTE.
 const PTE_ADDR Pa_t = PGMASK
 
-// / Pa_t represents a physical address.
+/// Pa_t represents a physical address.
 type Pa_t uintptr
 
-// / Bytepg_t is a byte addressed page.
+/// Bytepg_t is a byte addressed page.
 type Bytepg_t [PGSIZE]uint8
 
-// / Pg_t is a generic page of ints.
+/// Pg_t is a generic page of ints.
 type Pg_t [512]int
 
-// / Pmap_t is a page table page.
+/// Pmap_t is a page table page.
 type Pmap_t [512]Pa_t
 
-// / Unpin_i allows unpinning of physical pages.
+/// Unpin_i allows unpinning of physical pages.
 type Unpin_i interface {
 	Unpin(Pa_t)
 }
 
-// / Mmapinfo_t describes a mapping created by the runtime.
+/// Mmapinfo_t describes a mapping created by the runtime.
 type Mmapinfo_t struct {
 	Pg   *Pg_t
 	Phys Pa_t
 }
 
-// / Page_i abstracts physical page allocation.
+/// Page_i abstracts physical page allocation.
 type Page_i interface {
 	Refpg_new() (*Pg_t, Pa_t, bool)
 	Refpg_new_nozero() (*Pg_t, Pa_t, bool)
@@ -73,12 +73,12 @@ type Page_i interface {
 	Refdown(Pa_t) bool
 }
 
-// / Pg2bytes converts a page of ints to a page of bytes.
+/// Pg2bytes converts a page of ints to a page of bytes.
 func Pg2bytes(pg *Pg_t) *Bytepg_t {
 	return (*Bytepg_t)(unsafe.Pointer(pg))
 }
 
-// / Bytepg2pg converts a byte page back to a Pg_t.
+/// Bytepg2pg converts a byte page back to a Pg_t.
 func Bytepg2pg(pg *Bytepg_t) *Pg_t {
 	return (*Pg_t)(unsafe.Pointer(pg))
 }
@@ -91,19 +91,19 @@ func _pg2pgn(p_pg Pa_t) uint32 {
 	return uint32(p_pg >> PGSHIFT)
 }
 
-// / Refaddr returns the refcount pointer and index for the given page.
+/// Refaddr returns the refcount pointer and index for the given page.
 func (phys *Physmem_t) Refaddr(p_pg Pa_t) (*int32, uint32) {
 	idx := _pg2pgn(p_pg) - phys.startn
 	return &phys.Pgs[idx].Refcnt, idx
 }
 
-// / Tlbaddr returns the TLB mask address for a page.
+/// Tlbaddr returns the TLB mask address for a page.
 func (phys *Physmem_t) Tlbaddr(p_pg Pa_t) *uint64 {
 	idx := _pg2pgn(p_pg) - phys.startn
 	return &phys.Pgs[idx].Cpumask
 }
 
-// / Physpg_t describes a single physical page and can account for up to 16TB.
+/// Physpg_t describes a single physical page and can account for up to 16TB.
 type Physpg_t struct {
 	Refcnt int32
 	// index into pgs of next page on free list
@@ -113,7 +113,7 @@ type Physpg_t struct {
 	Cpumask uint64
 }
 
-// / Physmem_t manages all physical memory for the system.
+/// Physmem_t manages all physical memory for the system.
 type Physmem_t struct {
 	Pgs    []Physpg_t
 	startn uint32
@@ -188,13 +188,13 @@ func (phys *Physmem_t) _refpg_new() (*Pg_t, Pa_t, bool) {
 	return phys._phys_new(&phys.freei, phys, &phys.freelen)
 }
 
-// / Refcnt returns the current reference count of a page.
+/// Refcnt returns the current reference count of a page.
 func (phys *Physmem_t) Refcnt(p_pg Pa_t) int {
 	ref, _ := phys.Refaddr(p_pg)
 	return int(atomic.LoadInt32(ref))
 }
 
-// / Refup increments the reference count of a page.
+/// Refup increments the reference count of a page.
 func (phys *Physmem_t) Refup(p_pg Pa_t) {
 	ref, _ := phys.Refaddr(p_pg)
 	c := atomic.AddInt32(ref, 1)
@@ -216,17 +216,17 @@ func (phys *Physmem_t) _refdec(p_pg Pa_t) (bool, uint32) {
 	return c == 0, idx
 }
 
-// / Refdown decrements the reference count of a page.
-// / It returns true when the page is freed.
+/// Refdown decrements the reference count of a page.
+/// It returns true when the page is freed.
 func (phys *Physmem_t) Refdown(p_pg Pa_t) bool {
 	return phys._phys_put(p_pg, false)
 }
 
-// / Zeropg is a global zero-filled page used for allocations.
+/// Zeropg is a global zero-filled page used for allocations.
 var Zeropg *Pg_t
 
-// / Refpg_new allocates a zeroed page and returns its mapping and address.
-// / The returned page's refcount is not incremented.
+/// Refpg_new allocates a zeroed page and returns its mapping and address.
+/// The returned page's refcount is not incremented.
 func (phys *Physmem_t) Refpg_new() (*Pg_t, Pa_t, bool) {
 	if !phys.Dmapinit {
 		panic("refpg_new")
@@ -239,7 +239,7 @@ func (phys *Physmem_t) Refpg_new() (*Pg_t, Pa_t, bool) {
 	return pg, p_pg, true
 }
 
-// / Refpg_new_nozero allocates an uninitialised page.
+/// Refpg_new_nozero allocates an uninitialised page.
 func (phys *Physmem_t) Refpg_new_nozero() (*Pg_t, Pa_t, bool) {
 	pg, p_pg, ok := phys._refpg_new()
 	if !ok {
@@ -248,7 +248,7 @@ func (phys *Physmem_t) Refpg_new_nozero() (*Pg_t, Pa_t, bool) {
 	return pg, p_pg, true
 }
 
-// / Pmap_new allocates a new page map for the kernel.
+/// Pmap_new allocates a new page map for the kernel.
 func (phys *Physmem_t) Pmap_new() (*Pmap_t, Pa_t, bool) {
 	// first try pmap free lists
 	a, b, ok := phys._pcpu_new(true)
@@ -320,14 +320,14 @@ func (phys *Physmem_t) _phys_put(p_pg Pa_t, ispmap bool) bool {
 }
 
 // decrease ref count of pml4, freeing it if no CPUs have it loaded into cr3.
-// / Dec_pmap decreases the reference count of a pmap and frees it if unused.
+/// Dec_pmap decreases the reference count of a pmap and frees it if unused.
 func (phys *Physmem_t) Dec_pmap(p_pmap Pa_t) {
 	phys._phys_put(p_pmap, true)
 }
 
 // returns a page-aligned virtual address for the given physical address using
 // the direct mapping
-// / Dmap converts a physical address into a direct-mapped virtual address.
+/// Dmap converts a physical address into a direct-mapped virtual address.
 func (phys *Physmem_t) Dmap(p Pa_t) *Pg_t {
 	pa := uintptr(p)
 	if pa >= 1<<39 {
@@ -339,7 +339,7 @@ func (phys *Physmem_t) Dmap(p Pa_t) *Pg_t {
 	return (*Pg_t)(unsafe.Pointer(v))
 }
 
-// / Dmap_v2p converts a direct-mapped virtual address back to a physical address.
+/// Dmap_v2p converts a direct-mapped virtual address back to a physical address.
 func (phys *Physmem_t) Dmap_v2p(v *Pg_t) Pa_t {
 	va := (uintptr)(unsafe.Pointer(v))
 	if va <= 1<<39 {
@@ -352,7 +352,7 @@ func (phys *Physmem_t) Dmap_v2p(v *Pg_t) Pa_t {
 
 // returns a byte aligned virtual address for the physical address as slice of
 // uint8s
-// / Dmap8 returns a byte slice mapped to the given physical address.
+/// Dmap8 returns a byte slice mapped to the given physical address.
 func (phys *Physmem_t) Dmap8(p Pa_t) []uint8 {
 	pg := phys.Dmap(p)
 	off := p & PGOFFSET
@@ -360,7 +360,7 @@ func (phys *Physmem_t) Dmap8(p Pa_t) []uint8 {
 	return bpg[off:]
 }
 
-// / Pgcount reports free page counts across CPUs.
+/// Pgcount reports free page counts across CPUs.
 func (phys *Physmem_t) Pgcount() (int, int, []int, []int) {
 	phys.Lock()
 	r1 := int(phys.freelen)
@@ -405,10 +405,10 @@ func (phys *Physmem_t) pmapcount(fl *uint32) int {
 	return c
 }
 
-// / Physmem is the global physical memory allocator instance.
+/// Physmem is the global physical memory allocator instance.
 var Physmem = &Physmem_t{}
 
-// / Phys_init initializes the global physical memory allocator.
+/// Phys_init initializes the global physical memory allocator.
 func Phys_init() *Physmem_t {
 	// reserve 128MB of pages
 	//respgs := 1 << 15
