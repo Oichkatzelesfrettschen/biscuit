@@ -2,8 +2,10 @@ package msi
 
 import "sync"
 
+// / Msivec_t represents an MSI interrupt vector.
 type Msivec_t uint
 
+// / Msivecs_t tracks available MSI vectors.
 type Msivecs_t struct {
 	sync.Mutex
 	avail map[Msivec_t]bool
@@ -14,7 +16,7 @@ var msivecs = Msivecs_t{
 		61: true, 62: true, 63: true},
 }
 
-// allocates an MSI interrupt vecber
+// / Msi_alloc allocates an available MSI vector.
 func Msi_alloc() Msivec_t {
 	msivecs.Lock()
 	defer msivecs.Unlock()
@@ -26,6 +28,7 @@ func Msi_alloc() Msivec_t {
 	panic("no more MSI vecs")
 }
 
+// / Msi_free releases a previously allocated MSI vector.
 func Msi_free(vector Msivec_t) {
 	msivecs.Lock()
 	defer msivecs.Unlock()
