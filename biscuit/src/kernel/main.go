@@ -1670,13 +1670,13 @@ var thefs *fs.Fs_t
 
 const diskfs = false
 
-// / main initializes device drivers, CPUs, and the filesystem
-// / before scheduling the initial process.
-// / Major steps:
-// /   1. Set up physical memory and output system details.
-// /   2. Attach hardware devices and configure interrupts.
-// /   3. Start secondary CPUs, mount the filesystem, and launch init.
-// / Global state: populates global device handles and CPU information.
+// /       main initializes device drivers, CPUs, and the filesystem
+// /       before scheduling the initial process.
+// /       Major steps:
+// /         1. Set up physical memory and output system details.
+// /         2. Attach hardware devices and configure interrupts.
+// /         3. Start secondary CPUs, mount the filesystem, and launch init.
+// /       Global state: populates global device handles and CPU information.
 func main() {
 	res.Kernel = true
 	//runtime.GCDebug(1)
