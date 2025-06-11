@@ -4,8 +4,8 @@ import "runtime"
 
 import "res"
 
-// / Boundkey_t enumerates resource bound identifiers.
-// / No global variables are referenced.
+/// Boundkey_t enumerates resource bound identifiers.
+/// No global variables are referenced.
 type Boundkey_t int
 
 const (
@@ -102,13 +102,13 @@ const (
 	B_USERIOVEC_T__TX
 )
 
-// / Bounds returns the resource descriptor associated with key k.
-// /
-// / Parameters:
-// /   k - bound identifier to query.
-// /
-// / Return value:
-// /   *res.Res_t - resource descriptor for the key.
+/// Bounds returns the resource descriptor associated with key k.
+///
+/// Parameters:
+///   k - bound identifier to query.
+///
+/// Return value:
+///   *res.Res_t - resource descriptor for the key.
 func Bounds(k Boundkey_t) *res.Res_t {
 	return boundres[k]
 }

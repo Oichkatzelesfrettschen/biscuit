@@ -13,6 +13,7 @@ type oom_t struct {
 	lastpr time.Time
 }
 
+/// Oom handles out-of-memory situations.
 var Oom *oom_t = &oom_t{halp: oommsg.OomCh}
 
 /// Oom_init sets up the OOM killer and begins its loop.

@@ -7,35 +7,35 @@ import "fmt"
 
 // lowest userspace address
 
-// / VREC is the recursive mapping slot used by the kernel.
+/// VREC is the recursive mapping slot used by the kernel.
 const VREC int = 0x42
 
-// / VDIRECT is the direct-map slot.
+/// VDIRECT is the direct-map slot.
 const VDIRECT int = 0x44
 
-// / VEND marks the end of kernel virtual space.
+/// VEND marks the end of kernel virtual space.
 const VEND int = 0x50
 
-// / VUSER is the first user-space slot.
+/// VUSER is the first user-space slot.
 const VUSER int = 0x59
 
-// / USERMIN is the lowest user virtual address.
+/// USERMIN is the lowest user virtual address.
 const USERMIN int = VUSER << 39
 
-// / DMAPLEN is the length of the direct map in bytes.
+/// DMAPLEN is the length of the direct map in bytes.
 const DMAPLEN int = 1 << 39
 
-// / Vdirect holds the virtual address of the direct map region.
+/// Vdirect holds the virtual address of the direct map region.
 var Vdirect = uintptr(VDIRECT << 39)
 
-// / Dmaplen returns a slice over the direct map starting at p for l bytes.
+/// Dmaplen returns a slice over the direct map starting at p for l bytes.
 func Dmaplen(p Pa_t, l int) []uint8 {
 	_dmap := (*[DMAPLEN]uint8)(unsafe.Pointer(Vdirect))
 	return _dmap[p : p+Pa_t(l)]
 }
 
-// / Dmaplen32 is like Dmaplen but operates on 32-bit units.
-// / p and l must be multiples of 4.
+/// Dmaplen32 is like Dmaplen but operates on 32-bit units.
+/// p and l must be multiples of 4.
 func Dmaplen32(p uintptr, l int) []uint32 {
 	if p%4 != 0 || l%4 != 0 {
 		panic("not 32bit aligned")
@@ -83,22 +83,22 @@ func caddr(l4 int, ppd int, pd int, pt int, off int) *int {
 	return (*int)(unsafe.Pointer(uintptr(ret)))
 }
 
-// / Kent_t records a kernel page-map entry.
+/// Kent_t records a kernel page-map entry.
 type Kent_t struct {
 	Pml4slot int
 	Entry    Pa_t
 }
 
-// / Zerobpg is a byte representation of the zero page.
+/// Zerobpg is a byte representation of the zero page.
 var Zerobpg *Bytepg_t
 
-// / P_zeropg is the physical address of Zerobpg.
+/// P_zeropg is the physical address of Zerobpg.
 var P_zeropg Pa_t
 
-// / Kents contains all kernel PML4 entries.
+/// Kents contains all kernel PML4 entries.
 var Kents = make([]Kent_t, 0, 5)
 
-// / Dmap_init installs the direct map covering all physical memory.
+/// Dmap_init installs the direct map covering all physical memory.
 func Dmap_init() {
 	//kpmpages.pminit()
 
@@ -187,10 +187,10 @@ func Dmap_init() {
 	Zerobpg = Pg2bytes(Zeropg)
 }
 
-// / Kpmapp caches the kernel's top-level page map.
+/// Kpmapp caches the kernel's top-level page map.
 var Kpmapp *Pmap_t
 
-// / Kpmap returns the kernel's pmap pointer.
+/// Kpmap returns the kernel's pmap pointer.
 func Kpmap() *Pmap_t {
 	if Kpmapp == nil {
 		dur := caddr(VREC, VREC, VREC, VREC, 0)

@@ -97,7 +97,7 @@ func _acpi_madt(rsdt []uint8) (int, acpi_ioapic_t, bool) {
 				apicret.base = base
 			} else {
 				fmt.Printf("Ignoring IO APIC with base: %v\n",
-				    gsistart)
+					gsistart)
 			}
 			dbg("*** IO APIC addr: %x\n", base)
 			dbg("*** IO APIC IRQ start: %v\n", util.Readn(m, 4, 8))

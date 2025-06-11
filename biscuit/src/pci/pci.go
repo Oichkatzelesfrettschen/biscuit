@@ -10,6 +10,7 @@ var IRQ_DISK int = -1
 var INT_DISK int = -1
 
 // our actual disk
+/// Disk provides access to the attached disk driver.
 var Disk Disk_i
 
 const (

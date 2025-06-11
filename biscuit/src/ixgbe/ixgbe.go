@@ -107,12 +107,12 @@ func template(n int) ixgbereg_t {
 	return _xreg(0xa600, uint(n), 245, 4)
 }
 
-// / FCRTH returns the flow control receive threshold register for queue n.
+// /       FCRTH returns the flow control receive threshold register for queue n.
 func FCRTH(n int) ixgbereg_t {
 	return _xreg(0x3260, uint(n), 8, 4)
 }
 
-// / RDBAL returns the receive descriptor base address low register for queue n.
+// /       RDBAL returns the receive descriptor base address low register for queue n.
 func RDBAL(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x1000, uint(n), 64, 0x40)
@@ -121,7 +121,7 @@ func RDBAL(n int) ixgbereg_t {
 	}
 }
 
-// / RDBAH returns the receive descriptor base address high register for queue n.
+// /       RDBAH returns the receive descriptor base address high register for queue n.
 func RDBAH(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x1004, uint(n), 64, 0x40)
@@ -130,7 +130,7 @@ func RDBAH(n int) ixgbereg_t {
 	}
 }
 
-// / RDLEN returns the receive descriptor length register for queue n.
+// /       RDLEN returns the receive descriptor length register for queue n.
 func RDLEN(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x1008, uint(n), 64, 0x40)
@@ -139,7 +139,7 @@ func RDLEN(n int) ixgbereg_t {
 	}
 }
 
-// / SRRCTL returns the split receive control register for queue n.
+// /       SRRCTL returns the split receive control register for queue n.
 func SRRCTL(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x1014, uint(n), 64, 0x40)
@@ -148,7 +148,7 @@ func SRRCTL(n int) ixgbereg_t {
 	}
 }
 
-// / RXDCTL returns the receive descriptor control register for queue n.
+// /       RXDCTL returns the receive descriptor control register for queue n.
 func RXDCTL(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x1028, uint(n), 64, 0x40)
@@ -157,7 +157,7 @@ func RXDCTL(n int) ixgbereg_t {
 	}
 }
 
-// / RDT returns the receive descriptor tail register for queue n.
+// /       RDT returns the receive descriptor tail register for queue n.
 func RDT(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x1018, uint(n), 64, 0x40)
@@ -166,7 +166,7 @@ func RDT(n int) ixgbereg_t {
 	}
 }
 
-// / RDH returns the receive descriptor head register for queue n.
+// /       RDH returns the receive descriptor head register for queue n.
 func RDH(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x1010, uint(n), 64, 0x40)
@@ -175,62 +175,62 @@ func RDH(n int) ixgbereg_t {
 	}
 }
 
-// / QPRC returns the queue packet receive count register for queue n.
+// /       QPRC returns the queue packet receive count register for queue n.
 func QPRC(n int) ixgbereg_t {
 	return _xreg(0x1030, uint(n), 16, 0x40)
 }
 
-// / QPRDC returns the queue packet receive drop count register for queue n.
+// /       QPRDC returns the queue packet receive drop count register for queue n.
 func QPRDC(n int) ixgbereg_t {
 	return _xreg(0x1430, uint(n), 16, 0x40)
 }
 
-// / PFUTA returns the perfect filter table address register for queue n.
+// /       PFUTA returns the perfect filter table address register for queue n.
 func PFUTA(n int) ixgbereg_t {
 	return _xreg(0xf400, uint(n), 128, 4)
 }
 
-// / TDBAL returns the transmit descriptor base address low register.
+// /       TDBAL returns the transmit descriptor base address low register.
 func TDBAL(n int) ixgbereg_t {
 	return _xreg(0x6000, uint(n), 128, 0x40)
 }
 
-// / TDBAH returns the transmit descriptor base address high register.
+// /       TDBAH returns the transmit descriptor base address high register.
 func TDBAH(n int) ixgbereg_t {
 	return _xreg(0x6004, uint(n), 128, 0x40)
 }
 
-// / TDLEN returns the transmit descriptor length register.
+// /       TDLEN returns the transmit descriptor length register.
 func TDLEN(n int) ixgbereg_t {
 	return _xreg(0x6008, uint(n), 128, 0x40)
 }
 
-// / TDH returns the transmit descriptor head register.
+// /       TDH returns the transmit descriptor head register.
 func TDH(n int) ixgbereg_t {
 	return _xreg(0x6010, uint(n), 128, 0x40)
 }
 
-// / TDT returns the transmit descriptor tail register.
+// /       TDT returns the transmit descriptor tail register.
 func TDT(n int) ixgbereg_t {
 	return _xreg(0x6018, uint(n), 128, 0x40)
 }
 
-// / TXDCTL returns the transmit descriptor control register.
+// /       TXDCTL returns the transmit descriptor control register.
 func TXDCTL(n int) ixgbereg_t {
 	return _xreg(0x6028, uint(n), 128, 0x40)
 }
 
-// / TDWBAL returns the transmit descriptor write-back address low register.
+// /       TDWBAL returns the transmit descriptor write-back address low register.
 func TDWBAL(n int) ixgbereg_t {
 	return _xreg(0x6038, uint(n), 128, 0x40)
 }
 
-// / TDWBAH returns the transmit descriptor write-back address high register.
+// /       TDWBAH returns the transmit descriptor write-back address high register.
 func TDWBAH(n int) ixgbereg_t {
 	return _xreg(0x603c, uint(n), 128, 0x40)
 }
 
-// / RSCCTL returns the receive side coalescing control register.
+// /       RSCCTL returns the receive side coalescing control register.
 func RSCCTL(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x102c, uint(n), 64, 0x40)
@@ -239,7 +239,7 @@ func RSCCTL(n int) ixgbereg_t {
 	}
 }
 
-// / DCA_RXCTRL returns the DCA receive control register.
+// /       DCA_RXCTRL returns the DCA receive control register.
 func DCA_RXCTRL(n int) ixgbereg_t {
 	if n < 64 {
 		return _xreg(0x100c, uint(n), 64, 0x40)
@@ -248,47 +248,47 @@ func DCA_RXCTRL(n int) ixgbereg_t {
 	}
 }
 
-// / RTRPT4C returns the receive target rate register.
+// /       RTRPT4C returns the receive target rate register.
 func RTRPT4C(n int) ixgbereg_t {
 	return _xreg(0x2140, uint(n), 8, 4)
 }
 
-// / RTTPT2C returns the transmit packet timer register.
+// /       RTTPT2C returns the transmit packet timer register.
 func RTTPT2C(n int) ixgbereg_t {
 	return _xreg(0xdc20, uint(n), 8, 4)
 }
 
-// / RTTDT2C returns the transmit descriptor timer register.
+// /       RTTDT2C returns the transmit descriptor timer register.
 func RTTDT2C(n int) ixgbereg_t {
 	return _xreg(0x4910, uint(n), 8, 4)
 }
 
-// / RXPBSIZE returns the receive packet buffer size register.
+// /       RXPBSIZE returns the receive packet buffer size register.
 func RXPBSIZE(n int) ixgbereg_t {
 	return _xreg(0x3c00, uint(n), 8, 4)
 }
 
-// / TXPBSIZE returns the transmit packet buffer size register.
+// /       TXPBSIZE returns the transmit packet buffer size register.
 func TXPBSIZE(n int) ixgbereg_t {
 	return _xreg(0xcc00, uint(n), 8, 4)
 }
 
-// / TXPBTHRESH returns the transmit packet buffer threshold register.
+// /       TXPBTHRESH returns the transmit packet buffer threshold register.
 func TXPBTHRESH(n int) ixgbereg_t {
 	return _xreg(0x4950, uint(n), 8, 4)
 }
 
-// / TQSM returns the transmit queue statistic mapping register.
+// /       TQSM returns the transmit queue statistic mapping register.
 func TQSM(n int) ixgbereg_t {
 	return _xreg(0x8600, uint(n), 32, 4)
 }
 
-// / IVAR returns the interrupt vector allocation register.
+// /       IVAR returns the interrupt vector allocation register.
 func IVAR(n int) ixgbereg_t {
 	return _xreg(0x900, uint(n), 64, 4)
 }
 
-// / EITR returns the interrupt throttling register for vector n.
+// /       EITR returns the interrupt throttling register for vector n.
 func EITR(n int) ixgbereg_t {
 	if n < 24 {
 		return _xreg(0x820, uint(n), 128, 4)
@@ -297,42 +297,42 @@ func EITR(n int) ixgbereg_t {
 	}
 }
 
-// / PFVLVFB returns the PF VLAN filter table buffer register.
+// /       PFVLVFB returns the PF VLAN filter table buffer register.
 func PFVLVFB(n int) ixgbereg_t {
 	return _xreg(0xf200, uint(n), 128, 4)
 }
 
-// / VFTA returns the VLAN filter table array register.
+// /       VFTA returns the VLAN filter table array register.
 func VFTA(n int) ixgbereg_t {
 	return _xreg(0xa000, uint(n), 128, 4)
 }
 
-// / PFVFSPOOF returns the spoofed packet register for VF n.
+// /       PFVFSPOOF returns the spoofed packet register for VF n.
 func PFVFSPOOF(n int) ixgbereg_t {
 	return _xreg(0x8200, uint(n), 8, 4)
 }
 
-// / MPSAR returns the MAC pool select array register.
+// /       MPSAR returns the MAC pool select array register.
 func MPSAR(n int) ixgbereg_t {
 	return _xreg(0xa600, uint(n), 256, 4)
 }
 
-// / QPTC_L returns the lower 32 bits of the per-queue packet transmit counter.
+// /       QPTC_L returns the lower 32 bits of the per-queue packet transmit counter.
 func QPTC_L(n int) ixgbereg_t {
 	return _xreg(0x8700, uint(n), 16, 8)
 }
 
-// / QPTC returns the per-queue packet transmit counter.
+// /       QPTC returns the per-queue packet transmit counter.
 func QPTC(n int) ixgbereg_t {
 	return _xreg(0x8680, uint(n), 16, 4)
 }
 
-// / RAH returns the receive address high register.
+// /       RAH returns the receive address high register.
 func RAH(n uint) ixgbereg_t {
 	return _xreg(0xa204, uint(n), 128, 8)
 }
 
-// / RAL returns the receive address low register.
+// /       RAL returns the receive address low register.
 func RAL(n uint) ixgbereg_t {
 	return _xreg(0xa200, uint(n), 128, 8)
 }
@@ -940,24 +940,29 @@ func (x *ixgbe_t) pg_new() (*mem.Pg_t, mem.Pa_t) {
 	return a, b
 }
 
+// /      Lmac returns the link MAC address of the device.
 func (x *ixgbe_t) Lmac() *Mac_t {
 	return &x.mac
 }
 
+// /      Tx_raw queues a raw Ethernet frame for transmission.
 // returns after buf is enqueued to be trasmitted. buf's contents are copied to
 // the DMA buffer, so buf's memory can be reused/freed
 func (x *ixgbe_t) Tx_raw(buf [][]uint8) bool {
 	return x._tx_nowait(buf, false, false, false, 0, 0)
 }
 
+// /      Tx_ipv4 queues a preformatted IPv4 packet for transmission.
 func (x *ixgbe_t) Tx_ipv4(buf [][]uint8) bool {
 	return x._tx_nowait(buf, true, false, false, 0, 0)
 }
 
+// /      Tx_tcp queues a preformatted TCP segment for transmission.
 func (x *ixgbe_t) Tx_tcp(buf [][]uint8) bool {
 	return x._tx_nowait(buf, true, true, false, 0, 0)
 }
 
+// /      Tx_tcp_tso sends a TCP segment using TSO with the specified MSS.
 func (x *ixgbe_t) Tx_tcp_tso(buf [][]uint8, tcphlen, mss int) bool {
 	return x._tx_nowait(buf, true, true, true, tcphlen, mss)
 }
@@ -1933,7 +1938,7 @@ func (x *ixgbe_t) _dbc_init() {
 	x.rs(RTRPCS, v)
 }
 
-// / Ixgbe_init registers the driver with the PCI subsystem.
+// /       Ixgbe_init registers the driver with the PCI subsystem.
 func Ixgbe_init() {
 	pci.Pci_register_intel(pci.PCI_DEV_X540T, attach_ixgbe)
 }

@@ -3,12 +3,13 @@ package limits
 import "unsafe"
 import "sync/atomic"
 
+/// Lhits counts limit hits.
 var Lhits int
 
-// / Sysatomic_t is a numeric limit that can be atomically updated.
+/// Sysatomic_t is a numeric limit that can be atomically updated.
 type Sysatomic_t int64
 
-// / Syslimit_t tracks system wide resource limits.
+/// Syslimit_t tracks system wide resource limits.
 type Syslimit_t struct {
 	// protected by proclock
 	Sysprocs int
@@ -36,10 +37,10 @@ type Syslimit_t struct {
 	Blocks int
 }
 
-// / Syslimit describes the configured system wide limits.
+/// Syslimit describes the configured system wide limits.
 var Syslimit *Syslimit_t = MkSysLimit()
 
-// / MkSysLimit returns a pointer to the default set of limits.
+/// MkSysLimit returns a pointer to the default set of limits.
 func MkSysLimit() *Syslimit_t {
 	return &Syslimit_t{
 		Sysprocs: 1e4,
@@ -59,7 +60,7 @@ func (s *Sysatomic_t) _aptr() *int64 {
 	return (*int64)(unsafe.Pointer(s))
 }
 
-// / Given increases the limit by the provided amount.
+/// Given increases the limit by the provided amount.
 func (s *Sysatomic_t) Given(_n uint) {
 	n := int64(_n)
 	if n < 0 {
@@ -68,8 +69,8 @@ func (s *Sysatomic_t) Given(_n uint) {
 	atomic.AddInt64(s._aptr(), n)
 }
 
-// / Taken tries to decrement the limit by the provided amount.
-// / It returns true on success.
+/// Taken tries to decrement the limit by the provided amount.
+/// It returns true on success.
 func (s *Sysatomic_t) Taken(_n uint) bool {
 	n := int64(_n)
 	if n < 0 {
@@ -83,12 +84,12 @@ func (s *Sysatomic_t) Taken(_n uint) bool {
 	return false
 }
 
-// / Take decrements the limit and reports whether it succeeded.
+/// Take decrements the limit and reports whether it succeeded.
 func (s *Sysatomic_t) Take() bool {
 	return s.Taken(1)
 }
 
-// / Give increments the limit by one.
+/// Give increments the limit by one.
 func (s *Sysatomic_t) Give() {
 	s.Given(1)
 }

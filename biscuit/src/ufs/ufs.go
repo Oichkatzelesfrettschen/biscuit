@@ -15,7 +15,7 @@ import "biscuit/biscuit/src/vm"
 // FS
 //
 
-// / Ufs_t wraps the underlying filesystem and block device.
+/// Ufs_t wraps the underlying filesystem and block device.
 type Ufs_t struct {
 	ahci *ahci_disk_t
 	fs   *fs.Fs_t
@@ -32,7 +32,7 @@ func mkData(v uint8, n int) *vm.Fakeubuf_t {
 	return ub
 }
 
-// / MkBuf returns a Fakeubuf_t initialized with b.
+/// MkBuf returns a Fakeubuf_t initialized with b.
 func MkBuf(b []byte) *vm.Fakeubuf_t {
 	hdata := make([]uint8, len(b))
 	for i := range hdata {
@@ -43,7 +43,7 @@ func MkBuf(b []byte) *vm.Fakeubuf_t {
 	return ub
 }
 
-// / Sync forces pending filesystem changes to disk.
+/// Sync forces pending filesystem changes to disk.
 func (ufs *Ufs_t) Sync() defs.Err_t {
 	err := ufs.fs.Fs_sync()
 	if err != 0 {
@@ -52,7 +52,7 @@ func (ufs *Ufs_t) Sync() defs.Err_t {
 	return err
 }
 
-// / SyncApply flushes and applies pending log entries.
+/// SyncApply flushes and applies pending log entries.
 func (ufs *Ufs_t) SyncApply() defs.Err_t {
 	err := ufs.fs.Fs_syncapply()
 	if err != 0 {
@@ -61,7 +61,7 @@ func (ufs *Ufs_t) SyncApply() defs.Err_t {
 	return err
 }
 
-// / MkFile creates a new file at p and writes ub into it if provided.
+/// MkFile creates a new file at p and writes ub into it if provided.
 func (ufs *Ufs_t) MkFile(p ustr.Ustr, ub *vm.Fakeubuf_t) defs.Err_t {
 	fd, err := ufs.fs.Fs_open(p, defs.O_CREAT, 0, ufs.cwd, 0, 0)
 	if err != 0 {
@@ -81,7 +81,7 @@ func (ufs *Ufs_t) MkFile(p ustr.Ustr, ub *vm.Fakeubuf_t) defs.Err_t {
 	return err
 }
 
-// / MkDir creates a directory at p.
+/// MkDir creates a directory at p.
 func (ufs *Ufs_t) MkDir(p ustr.Ustr) defs.Err_t {
 	err := ufs.fs.Fs_mkdir(p, 0755, ufs.cwd)
 	if err != 0 {
@@ -90,14 +90,14 @@ func (ufs *Ufs_t) MkDir(p ustr.Ustr) defs.Err_t {
 	return err
 }
 
-// / Rename moves oldp to newp.
+/// Rename moves oldp to newp.
 func (ufs *Ufs_t) Rename(oldp, newp ustr.Ustr) defs.Err_t {
 	err := ufs.fs.Fs_rename(oldp, newp, ufs.cwd)
 	return err
 }
 
 // update (XXX check that ub < len(file)?)
-// / Update overwrites file p with ub starting at offset zero.
+/// Update overwrites file p with ub starting at offset zero.
 func (ufs *Ufs_t) Update(p ustr.Ustr, ub *vm.Fakeubuf_t) defs.Err_t {
 	fd, err := ufs.fs.Fs_open(p, defs.O_RDWR, 0, ufs.cwd, 0, 0)
 	if err != 0 {
@@ -115,7 +115,7 @@ func (ufs *Ufs_t) Update(p ustr.Ustr, ub *vm.Fakeubuf_t) defs.Err_t {
 	return err
 }
 
-// / Append appends ub to the file at p.
+/// Append appends ub to the file at p.
 func (ufs *Ufs_t) Append(p ustr.Ustr, ub *vm.Fakeubuf_t) defs.Err_t {
 	fd, err := ufs.fs.Fs_open(p, defs.O_RDWR, 0, ufs.cwd, 0, 0)
 	if err != 0 {
@@ -139,7 +139,7 @@ func (ufs *Ufs_t) Append(p ustr.Ustr, ub *vm.Fakeubuf_t) defs.Err_t {
 	return err
 }
 
-// / Unlink removes the file at p.
+/// Unlink removes the file at p.
 func (ufs *Ufs_t) Unlink(p ustr.Ustr) defs.Err_t {
 	err := ufs.fs.Fs_unlink(p, ufs.cwd, false)
 	if err != 0 {
@@ -148,7 +148,7 @@ func (ufs *Ufs_t) Unlink(p ustr.Ustr) defs.Err_t {
 	return err
 }
 
-// / UnlinkDir removes the directory at p.
+/// UnlinkDir removes the directory at p.
 func (ufs *Ufs_t) UnlinkDir(p ustr.Ustr) defs.Err_t {
 	err := ufs.fs.Fs_unlink(p, ufs.cwd, true)
 	if err != 0 {
@@ -157,7 +157,7 @@ func (ufs *Ufs_t) UnlinkDir(p ustr.Ustr) defs.Err_t {
 	return err
 }
 
-// / Stat retrieves the stat information for p.
+/// Stat retrieves the stat information for p.
 func (ufs *Ufs_t) Stat(p ustr.Ustr) (*stat.Stat_t, defs.Err_t) {
 	s := &stat.Stat_t{}
 	err := ufs.fs.Fs_stat(p, s, ufs.cwd)
@@ -167,7 +167,7 @@ func (ufs *Ufs_t) Stat(p ustr.Ustr) (*stat.Stat_t, defs.Err_t) {
 	return s, err
 }
 
-// / Read reads the entire file at p into memory.
+/// Read reads the entire file at p into memory.
 func (ufs *Ufs_t) Read(p ustr.Ustr) ([]byte, defs.Err_t) {
 	st, err := ufs.Stat(p)
 	if err != 0 {
@@ -194,7 +194,7 @@ func (ufs *Ufs_t) Read(p ustr.Ustr) ([]byte, defs.Err_t) {
 	return v, err
 }
 
-// / Ls returns a map of file names to stats for directory p.
+/// Ls returns a map of file names to stats for directory p.
 func (ufs *Ufs_t) Ls(p ustr.Ustr) (map[string]*stat.Stat_t, defs.Err_t) {
 	res := make(map[string]*stat.Stat_t, 100)
 	d, e := ufs.Read(p)
@@ -218,17 +218,17 @@ func (ufs *Ufs_t) Ls(p ustr.Ustr) (map[string]*stat.Stat_t, defs.Err_t) {
 	return res, 0
 }
 
-// / Statistics returns internal filesystem statistics.
+/// Statistics returns internal filesystem statistics.
 func (ufs *Ufs_t) Statistics() string {
 	return ufs.fs.Fs_statistics()
 }
 
-// / Evict evicts cached inodes and blocks.
+/// Evict evicts cached inodes and blocks.
 func (ufs *Ufs_t) Evict() {
 	ufs.fs.Fs_evict()
 }
 
-// / Sizes returns the number of inodes and blocks in use.
+/// Sizes returns the number of inodes and blocks in use.
 func (ufs *Ufs_t) Sizes() (int, int) {
 	return ufs.fs.Sizes()
 }
@@ -243,7 +243,7 @@ func openDisk(d string) *ahci_disk_t {
 	return a
 }
 
-// / BootFS boots the filesystem from an on-disk image.
+/// BootFS boots the filesystem from an on-disk image.
 func BootFS(dst string) *Ufs_t {
 	//log.Printf("reboot %v ...\n", dst)
 	ufs := &Ufs_t{}
@@ -253,7 +253,7 @@ func BootFS(dst string) *Ufs_t {
 	return ufs
 }
 
-// / BootMemFS boots the filesystem using an in-memory disk image.
+/// BootMemFS boots the filesystem using an in-memory disk image.
 func BootMemFS(dst string) *Ufs_t {
 	log.Printf("reboot %v ...\n", dst)
 	ufs := &Ufs_t{}
@@ -263,7 +263,7 @@ func BootMemFS(dst string) *Ufs_t {
 	return ufs
 }
 
-// / ShutdownFS shuts down the filesystem and closes the disk image.
+/// ShutdownFS shuts down the filesystem and closes the disk image.
 func ShutdownFS(ufs *Ufs_t) {
 	ufs.fs.StopFS()
 	ufs.ahci.close()
