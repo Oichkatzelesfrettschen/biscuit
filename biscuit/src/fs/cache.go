@@ -29,11 +29,15 @@ type cstats_t struct {
 	Nadd   stats.Counter_t
 }
 
+// / Obj_t is implemented by objects managed by cache_t.
+// / EvictFromCache is called before removal when the refcount reaches zero.
+// / EvictDone is called once the object has been dropped from the cache.
 type Obj_t interface {
-	EvictFromCache() // Cache will evict this object, if refcnt = 0 after calling Evict()
-	EvictDone()      // Cache has evicted the object, the refcnt was 0
+	EvictFromCache()
+	EvictDone()
 }
 
+// / Objref_t wraps a cached object with reference tracking information.
 type Objref_t struct {
 	Key    int
 	Obj    Obj_t
@@ -41,6 +45,7 @@ type Objref_t struct {
 	tstamp uint64
 }
 
+// / MkObjref creates a new object reference with refcount one.
 func MkObjref(obj Obj_t, key int) *Objref_t {
 	e := &Objref_t{}
 	e.Obj = obj
@@ -50,6 +55,7 @@ func MkObjref(obj Obj_t, key int) *Objref_t {
 	return e
 }
 
+// / Refcnt returns the current reference count.
 func (ref *Objref_t) Refcnt() uint32 {
 	c := atomic.LoadUint32(&ref.refcnt)
 	return c
@@ -62,6 +68,8 @@ func (ref *Objref_t) Refcnt() uint32 {
 // don't use Up() directly, because they use Lookup(), or they ignore return
 // value of Up(), because they know that the refcnt > 0 (because the Up()
 // follows a Lookup()).
+// / Up increments the reference count if the object is not being removed.
+// / It returns the previous count and whether the increment succeeded.
 func (ref *Objref_t) Up() (uint32, bool) {
 	for {
 		v := atomic.LoadUint32(&ref.refcnt)
@@ -81,6 +89,7 @@ func (ref *Objref_t) Up() (uint32, bool) {
 	}
 }
 
+// / Down decrements the reference count and returns the new value.
 func (ref *Objref_t) Down() uint32 {
 	v := atomic.AddUint32(&ref.refcnt, ^uint32(0))
 	if int(int32(v)) < 0 {
@@ -121,7 +130,7 @@ func (c *cache_t) lookupinc(key int) (*Objref_t, bool) {
 		e := v.(*Objref_t)
 		refcnt := atomic.LoadUint32(&e.refcnt)
 		new := refcnt + 1
-		if refcnt & REMOVE != new & REMOVE {
+		if refcnt&REMOVE != new&REMOVE {
 			panic("no")
 		}
 		if int(int32(refcnt)) < 0 {
@@ -182,12 +191,14 @@ func (c *cache_t) _remove(key int, mustexist bool) bool {
 	}
 }
 
+// / Stats returns cache statistics in string form.
 func (c *cache_t) Stats() string {
 	s := ""
 	s += stats.Stats2String(c.stats)
 	return s
 }
 
+// / ByStamp sorts cache entries by timestamp.
 type ByStamp []hashtable.Pair_t
 
 func (a ByStamp) Len() int      { return len(a) }
@@ -200,8 +211,8 @@ func (a ByStamp) Less(i, j int) bool {
 	return v1 < v2
 }
 
-// Evicts up-to half of the objects in the cache. returns the number of cache
-// entries remaining and the number evicted.
+// / Evict_half removes up to half of the cached objects.
+// / It returns the number of entries left and the number evicted.
 func (c *cache_t) Evict_half() (int, int) {
 	c.Lock()
 	defer c.Unlock()

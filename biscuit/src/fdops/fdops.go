@@ -7,17 +7,19 @@ import "mem"
 import "stat"
 import "tinfo"
 
+// / Ready_t represents poll notification flags.
 type Ready_t uint8
 
 const (
-	R_READ  Ready_t = 1 << iota
-	R_WRITE Ready_t = 1 << iota
-	R_ERROR Ready_t = 1 << iota
-	R_HUP   Ready_t = 1 << iota
+	R_READ  Ready_t = 1 << iota /// readable
+	R_WRITE Ready_t = 1 << iota /// writable
+	R_ERROR Ready_t = 1 << iota /// error condition
+	R_HUP   Ready_t = 1 << iota /// hangup
 )
 
 // interface for reading/writing from user space memory either via a pointer
 // and length or an array of pointers and lengths (iovec)
+// / Userio_i abstracts user space I/O buffers.
 type Userio_i interface {
 	// copy src to user memory
 	Uiowrite(src []uint8) (int, defs.Err_t)
@@ -29,6 +31,7 @@ type Userio_i interface {
 	Totalsz() int
 }
 
+// / Fdops_i defines operations on a file descriptor.
 type Fdops_i interface {
 	// fd ops
 	Close() defs.Err_t
@@ -75,6 +78,7 @@ type Fdops_i interface {
 	Shutdown(rdone, wdone bool) defs.Err_t
 }
 
+// / Pollmsg_t describes an interest in events for Pollers_t.
 type Pollmsg_t struct {
 	notif  chan bool
 	Events Ready_t
@@ -82,6 +86,7 @@ type Pollmsg_t struct {
 	tid    defs.Tid_t
 }
 
+// / Pm_set initializes the poll message with a tid and event mask.
 func (pm *Pollmsg_t) Pm_set(tid defs.Tid_t, events Ready_t, dowait bool) {
 	if pm.notif == nil {
 		// 1-element buffered channel; that way devices can send
@@ -93,7 +98,8 @@ func (pm *Pollmsg_t) Pm_set(tid defs.Tid_t, events Ready_t, dowait bool) {
 	pm.tid = tid
 }
 
-// returns whether we timed out, and error
+// / Pm_wait waits for a ready notification or timeout.
+// / Returns whether a timeout occurred and any error code.
 func (pm *Pollmsg_t) Pm_wait(to int) (bool, defs.Err_t) {
 	var tochan <-chan time.Time
 	if to != -1 {
@@ -116,6 +122,7 @@ func (pm *Pollmsg_t) Pm_wait(to int) (bool, defs.Err_t) {
 }
 
 // keeps track of all outstanding pollers. used by devices supporting poll(2)
+// / Pollers_t keeps track of all outstanding pollers.
 type Pollers_t struct {
 	allmask Ready_t
 	waiters []Pollmsg_t
@@ -142,6 +149,7 @@ func (p *Pollers_t) _findempty() *Pollmsg_t {
 
 var lhits int
 
+// / Addpoller registers a poll request.
 func (p *Pollers_t) Addpoller(pm *Pollmsg_t) defs.Err_t {
 	if p.waiters == nil {
 		p.waiters = make([]Pollmsg_t, 10)
@@ -159,6 +167,7 @@ func (p *Pollers_t) Addpoller(pm *Pollmsg_t) defs.Err_t {
 	return 0
 }
 
+// / Wakeready notifies waiting pollers of ready events.
 func (p *Pollers_t) Wakeready(r Ready_t) {
 	if p.allmask&r == 0 {
 		return

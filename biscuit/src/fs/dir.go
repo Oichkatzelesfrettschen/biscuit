@@ -12,6 +12,7 @@ import "res"
 import "ustr"
 import "util"
 
+// / NAME_MAX is the longest valid file name length.
 const NAME_MAX int = 512
 
 var lhits = 0
@@ -120,8 +121,8 @@ type icdent_t struct {
 	offset int
 	inum   defs.Inum_t
 	// idm may be nil since it is lazily filled on ilookup
-	idm    *imemnode_t
-	name   ustr.Ustr
+	idm  *imemnode_t
+	name ustr.Ustr
 }
 
 func (de *icdent_t) String() string {
