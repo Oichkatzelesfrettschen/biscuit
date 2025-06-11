@@ -100,6 +100,8 @@ func pmap_walk(pml4 *mem.Pmap_t, v int, perms mem.Pa_t) (*mem.Pa_t, defs.Err_t) 
 	return ret, 0
 }
 
+// / Pmap_lookup returns the PTE for virtual address v in pml4 if it
+// / exists, or nil otherwise.
 func Pmap_lookup(pml4 *mem.Pmap_t, v int) *mem.Pa_t {
 	return _pmap_walk(pml4, v, false, 0)
 }
@@ -136,9 +138,9 @@ func pmfree(pml4 *mem.Pmap_t, start, end uintptr, fops mem.Unpin_i) {
 	}
 }
 
-// forks the ptes only for the virtual address range specified. returns true if
-// the parent's TLB should be flushed because we added COW bits to PTEs and
-// whether the fork failed due to allocation failure
+// / Ptefork duplicates the parent's page tables from start to end into
+// / the child pmap. It returns a flag indicating whether the parent's
+// / TLB should be flushed and whether the operation succeeded.
 func Ptefork(cpmap, ppmap *mem.Pmap_t, start, end int,
 	shared bool) (bool, bool) {
 	doflush := false
@@ -190,11 +192,12 @@ func Ptefork(cpmap, ppmap *mem.Pmap_t, start, end int,
 	return doflush, true
 }
 
+// / Numtlbs is the number of hardware TLBs in the system.
 var Numtlbs int = 1
 
 var _tlbslocks [runtime.MAXCPUS]struct {
 	sync.Mutex
-	_ [64-8]uint8
+	_ [64 - 8]uint8
 }
 
 func tlb_shootdown(p_pmap mem.Pa_t, tlb_ref *uint64, va uintptr, pgcount int) {
@@ -243,9 +246,9 @@ func tlb_shootdown(p_pmap mem.Pa_t, tlb_ref *uint64, va uintptr, pgcount int) {
 	setbits := bits.OnesCount64(stalecpus)
 	did := 0
 	for i := 0; did < setbits; i++ {
-		if (1 << uint(i)) & stalecpus != 0 {
+		if (1<<uint(i))&stalecpus != 0 {
 			apicid := _numtoapicid(i)
-			icrw(apicid << 24, low)
+			icrw(apicid<<24, low)
 			did++
 		}
 	}
@@ -260,16 +263,15 @@ func tlb_shootdown(p_pmap mem.Pa_t, tlb_ref *uint64, va uintptr, pgcount int) {
 	// shootdowns. for this reason, Cpum may have more bits set than
 	// requested, so wait for at least those bits from the CPUs to which we
 	// sent shootdowns.
-	for atomic.LoadUint64(&mytlbs.Cpum) & stalecpus != stalecpus {
+	for atomic.LoadUint64(&mytlbs.Cpum)&stalecpus != stalecpus {
 	}
 	mytlbs.P_pmap = 0
 }
 
 var kplock = sync.Mutex{}
 
-// allocates a page tracked by kpages and maps it at va. only used during AP
-// bootup.
-// XXX remove this crap
+// / Kmalloc allocates a kernel page and maps it at va with the given
+// / permissions. It is used only during secondary CPU startup.
 func Kmalloc(va uintptr, perms mem.Pa_t) {
 	kplock.Lock()
 	defer kplock.Unlock()
@@ -288,6 +290,7 @@ func Kmalloc(va uintptr, perms mem.Pa_t) {
 	*pte = p_pg | PTE_P | perms
 }
 
+// / Assert_no_va_map panics if virtual address va is mapped in pmap.
 func Assert_no_va_map(pmap *mem.Pmap_t, va uintptr) {
 	pte := Pmap_lookup(pmap, int(va))
 	if pte != nil && *pte&PTE_P != 0 {
@@ -295,8 +298,8 @@ func Assert_no_va_map(pmap *mem.Pmap_t, va uintptr) {
 	}
 }
 
-// don't forget: there are two places where pmaps/memory are free'd:
-// Proc_t.terminate() and exec.
+// / Uvmfree_inner frees all mappings described in vmr and releases the
+// / associated page tables. It is used by process termination and exec.
 func Uvmfree_inner(pmg *mem.Pmap_t, p_pmap mem.Pa_t, vmr *Vmregion_t) {
 	vmr.Iter(func(vmi *Vminfo_t) {
 		start := uintptr(vmi.Pgn << PGSHIFT)

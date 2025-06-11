@@ -9,9 +9,8 @@ import "bounds"
 import "defs"
 import "res"
 
-// a helper object for read/writing from userspace memory. virtual address
-// lookups and reads/writes to those addresses must be atomic with respect to
-// page faults.
+// / Userbuf_t assists reading and writing user memory. Address lookups
+// / and accesses are atomic with respect to page faults.
 type Userbuf_t struct {
 	userva int
 	len    int
@@ -20,6 +19,7 @@ type Userbuf_t struct {
 	as  *Vm_t
 }
 
+// / ub_init initialises the buffer for the given address space.
 func (ub *Userbuf_t) ub_init(as *Vm_t, uva, len int) {
 	// XXX fix signedness
 	if len < 0 {
@@ -34,13 +34,18 @@ func (ub *Userbuf_t) ub_init(as *Vm_t, uva, len int) {
 	ub.as = as
 }
 
+// / Remain returns the number of unread bytes left in the buffer.
 func (ub *Userbuf_t) Remain() int {
 	return ub.len - ub.off
 }
 
+// / Totalsz reports the total size of the buffer in bytes.
 func (ub *Userbuf_t) Totalsz() int {
 	return ub.len
 }
+
+// / Uioread copies data from user memory into dst and returns the
+// / number of bytes read along with an error code.
 func (ub *Userbuf_t) Uioread(dst []uint8) (int, defs.Err_t) {
 	ub.as.Lock_pmap()
 	a, b := ub._tx(dst, false)
@@ -48,6 +53,8 @@ func (ub *Userbuf_t) Uioread(dst []uint8) (int, defs.Err_t) {
 	return a, b
 }
 
+// / Uiowrite copies data from src into user memory and returns the
+// / number of bytes written along with an error code.
 func (ub *Userbuf_t) Uiowrite(src []uint8) (int, defs.Err_t) {
 	ub.as.Lock_pmap()
 	a, b := ub._tx(src, true)
@@ -92,12 +99,16 @@ type _iove_t struct {
 	sz  int
 }
 
+// / Useriovec_t represents a sequence of user buffers defined by the
+// / iovec array in user memory.
 type Useriovec_t struct {
 	iovs []_iove_t
 	tsz  int
 	as   *Vm_t
 }
 
+// / Iov_init initializes the iovec array from user memory at iovarn.
+// / It returns an error code if the array cannot be read.
 func (iov *Useriovec_t) Iov_init(as *Vm_t, iovarn uint, niovs int) defs.Err_t {
 	if niovs > 10 {
 		fmt.Printf("many iovecs\n")
@@ -131,6 +142,7 @@ func (iov *Useriovec_t) Iov_init(as *Vm_t, iovarn uint, niovs int) defs.Err_t {
 	return 0
 }
 
+// / Remain returns the number of bytes remaining across all iovecs.
 func (iov *Useriovec_t) Remain() int {
 	ret := 0
 	for i := range iov.iovs {
@@ -139,6 +151,8 @@ func (iov *Useriovec_t) Remain() int {
 	return ret
 }
 
+// / Totalsz returns the total number of bytes described by the iovec
+// / array.
 func (iov *Useriovec_t) Totalsz() int {
 	return iov.tsz
 }
@@ -173,6 +187,8 @@ func (iov *Useriovec_t) _tx(buf []uint8, touser bool) (int, defs.Err_t) {
 	return did, 0
 }
 
+// / Uioread reads into dst from the set of user buffers and returns the
+// / number of bytes copied along with an error code.
 func (iov *Useriovec_t) Uioread(dst []uint8) (int, defs.Err_t) {
 	iov.as.Lock_pmap()
 	a, b := iov._tx(dst, false)
@@ -180,6 +196,8 @@ func (iov *Useriovec_t) Uioread(dst []uint8) (int, defs.Err_t) {
 	return a, b
 }
 
+// / Uiowrite writes src to the user buffers and returns the number of
+// / bytes copied along with an error code.
 func (iov *Useriovec_t) Uiowrite(src []uint8) (int, defs.Err_t) {
 	iov.as.Lock_pmap()
 	a, b := iov._tx(src, true)
@@ -187,23 +205,27 @@ func (iov *Useriovec_t) Uiowrite(src []uint8) (int, defs.Err_t) {
 	return a, b
 }
 
-// helper type which kernel code can use as userio_i, but is actually a kernel
-// buffer (i.e. reading an ELF header from the file system for exec(2)).
+// / Fakeubuf_t implements the same interface as Userbuf_t but
+// / operates on a kernel buffer. It is used when the kernel needs to
+// / treat internal memory like user memory.
 type Fakeubuf_t struct {
 	fbuf []uint8
 	off  int
 	len  int
 }
 
+// / Fake_init sets up the fake buffer with the provided slice.
 func (fb *Fakeubuf_t) Fake_init(buf []uint8) {
 	fb.fbuf = buf
 	fb.len = len(fb.fbuf)
 }
 
+// / Remain returns the number of bytes left in the fake buffer.
 func (fb *Fakeubuf_t) Remain() int {
 	return len(fb.fbuf)
 }
 
+// / Totalsz returns the total length of the fake buffer.
 func (fb *Fakeubuf_t) Totalsz() int {
 	return fb.len
 }
@@ -219,16 +241,21 @@ func (fb *Fakeubuf_t) _tx(buf []uint8, tofbuf bool) (int, defs.Err_t) {
 	return c, 0
 }
 
+// / Uioread copies from the fake buffer into dst.
 func (fb *Fakeubuf_t) Uioread(dst []uint8) (int, defs.Err_t) {
 	return fb._tx(dst, false)
 }
 
+// / Uiowrite copies src into the fake buffer.
 func (fb *Fakeubuf_t) Uiowrite(src []uint8) (int, defs.Err_t) {
 	return fb._tx(src, true)
 }
 
+// / Ubpool provides reusable Userbuf_t structures to reduce allocations.
 var Ubpool = sync.Pool{New: func() interface{} { return new(Userbuf_t) }}
 
+// / Mkfxbuf allocates a 16-byte aligned buffer initialized for
+// / floating-point context storage.
 func Mkfxbuf() *[64]uintptr {
 	ret := new([64]uintptr)
 	n := uintptr(unsafe.Pointer(ret))
