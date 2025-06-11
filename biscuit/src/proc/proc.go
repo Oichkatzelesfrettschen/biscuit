@@ -78,6 +78,7 @@ type ptable_t struct {
 	ht *hashtable.Hashtable_t
 }
 
+/// Get returns the process associated with pid if present.
 func (pt *ptable_t) Get(pid int32) (*Proc_t, bool) {
 	ret, ok := pt.ht.Get(pid)
 	if ok {
@@ -86,15 +87,18 @@ func (pt *ptable_t) Get(pid int32) (*Proc_t, bool) {
 	return nil, false
 }
 
+/// Set associates pid with p in the table.
 func (pt *ptable_t) Set(pid int32, p *Proc_t) {
 	pt.ht.Set(pid, p)
 }
 
+/// Del removes pid from the table.
 func (pt *ptable_t) Del(pid int32) {
 	pt.ht.Del(pid)
 }
 
 // Iter may execute concurrently with other lookups, inserts, and deletes
+/// Iter walks the table and applies f to each entry.
 func (pt *ptable_t) Iter(f func(int32, *Proc_t) bool) {
 	pt.ht.Iter(func(key, value interface{}) bool {
 		pid := key.(int32)
@@ -194,7 +198,7 @@ out:
 	return 0, 0, false
 }
 
-// fdn is not guaranteed to be a sane fd
+/// Fd_get_inner returns the fd at fdn or false if it does not exist.
 func (p *Proc_t) Fd_get_inner(fdn int) (*fd.Fd_t, bool) {
 	if fdn < 0 || fdn >= len(p.Fds) {
 		return nil, false
