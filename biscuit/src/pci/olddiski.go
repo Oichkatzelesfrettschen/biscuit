@@ -1,5 +1,6 @@
 package pci
 
+/// BSIZE is the buffer size used for IDE requests.
 const BSIZE = 4096
 
 // XXX delete and the disks that use it?
