@@ -17,7 +17,7 @@ import "stats"
 import "ustr"
 import "util"
 
-// / inode_stats_t collects statistics about inode operations.
+// /       inode_stats_t collects statistics about inode operations.
 type inode_stats_t struct {
 	Nopen       stats.Counter_t
 	Nnamei      stats.Counter_t
@@ -48,14 +48,14 @@ type inode_stats_t struct {
 	Ciupdate    stats.Cycles_t
 }
 
-// / Stats resets and returns the accumulated inode statistics.
+// /       Stats resets and returns the accumulated inode statistics.
 func (is *inode_stats_t) Stats() string {
 	s := "inode" + stats.Stats2String(*is)
 	*is = inode_stats_t{}
 	return s
 }
 
-// / Inode_t provides indexed access to the on-disk inode structure.
+// /       Inode_t provides indexed access to the on-disk inode structure.
 type Inode_t struct {
 	Iblk *Bdev_block_t
 	Ioff int
@@ -127,7 +127,7 @@ func (ind *Inode_t) addr(i int) int {
 	return fieldr(ind.Iblk.Data, ifield(ind.Ioff, addroff+i))
 }
 
-// / W_itype updates the inode's type field.
+// /       W_itype updates the inode's type field.
 func (ind *Inode_t) W_itype(n int) {
 	if n < I_FIRST || n > I_LAST {
 		panic("weird inode type")
@@ -135,12 +135,12 @@ func (ind *Inode_t) W_itype(n int) {
 	fieldw(ind.Iblk.Data, ifield(ind.Ioff, 0), n)
 }
 
-// / W_linkcount writes the link count.
+// /       W_linkcount writes the link count.
 func (ind *Inode_t) W_linkcount(n int) {
 	fieldw(ind.Iblk.Data, ifield(ind.Ioff, 1), n)
 }
 
-// / W_size records the inode's size in bytes.
+// /       W_size records the inode's size in bytes.
 func (ind *Inode_t) W_size(n int) {
 	fieldw(ind.Iblk.Data, ifield(ind.Ioff, 2), n)
 }
@@ -163,7 +163,7 @@ func (ind *Inode_t) w_dindirect(blk int) {
 	fieldw(ind.Iblk.Data, ifield(ind.Ioff, 6), blk)
 }
 
-// / W_addr sets the i'th direct block address.
+// /       W_addr sets the i'th direct block address.
 func (ind *Inode_t) W_addr(i int, blk int) {
 	if i < 0 || i > NIADDRS {
 		panic("bad inode block index")
@@ -208,16 +208,19 @@ type imemnode_t struct {
 	}
 }
 
+// /      String returns a textual representation of the inode for debugging.
 func (idm *imemnode_t) String() string {
 	s := ""
 	s += fmt.Sprintf("[inum %d type %d]\n", idm.inum, idm.itype)
 	return s
 }
 
+// /      Refup increments the reference count on the inode.
 func (imem *imemnode_t) Refup(s string) (uint32, bool) {
 	return imem.ref.Up()
 }
 
+// /      Refdown decrements the reference count and reports when the inode is free.
 func (imem *imemnode_t) Refdown(s string) bool {
 	v := imem.ref.Down()
 	if v == 0 && imem.links == 0 { // remove unlinked inodes from cache
@@ -246,6 +249,7 @@ func (idm *imemnode_t) evictDcache() {
 	idm._derelease()
 }
 
+// /      EvictFromCache removes cached directory entries for an unused inode.
 // The cache wants to evict this inode because it hasn't been used recently, but
 // its links maybe non-zero, so it could be in use.
 func (idm *imemnode_t) EvictFromCache() {
@@ -254,10 +258,12 @@ func (idm *imemnode_t) EvictFromCache() {
 	idm.iunlock("Evict")
 }
 
+// /      EvictDone cleans up state after EvictFromCache completed.
 func (idm *imemnode_t) EvictDone() {
 	// nothing to do anymore: Evict() already deleted idm's directory cache
 }
 
+// /      Free releases all resources associated with the inode.
 func (idm *imemnode_t) Free() {
 	// no need to lock...
 	if idm.links != 0 {

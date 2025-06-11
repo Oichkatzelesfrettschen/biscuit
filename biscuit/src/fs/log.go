@@ -36,10 +36,9 @@ const Canceled = -2
 type opid_t int
 type index_t uint64
 
-//
 // The public interface to the logging layer
 //
-
+// /      Op_begin starts a new logged operation and returns its identifier.
 func (log *log_t) Op_begin(s string) opid_t {
 	if !log.logging {
 		return 0
@@ -73,6 +72,7 @@ func (log *log_t) Op_begin(s string) opid_t {
 	return opid
 }
 
+// /      Op_end marks the completion of a logged operation.
 func (log *log_t) Op_end(opid opid_t) {
 	if !log.logging {
 		return
@@ -105,6 +105,7 @@ func (log *log_t) Op_end(opid opid_t) {
 	log.stats.Opendcycles.Add(s)
 }
 
+// /      Force waits for outstanding logged operations to commit to disk.
 // Ensure any fs ops in the journal preceding this sync call are flushed to disk
 // by waiting for log commit.
 func (log *log_t) Force(doapply bool) {
@@ -158,6 +159,7 @@ func (log *log_t) Force(doapply bool) {
 	}
 }
 
+// /      Write logs the provided block for the given operation.
 // Write increments ref so that the log has always a valid ref to the buf's
 // page.  The logging layer refdowns when it it is done with the page.  The
 // caller of log_write shouldn't hold buf's lock.
@@ -165,16 +167,19 @@ func (log *log_t) Write(opid opid_t, b *Bdev_block_t) {
 	log.write(opid, b, false)
 }
 
+// /      Write_ordered records an ordered write without logging to disk.
 func (log *log_t) Write_ordered(opid opid_t, b *Bdev_block_t) {
 	log.write(opid, b, true)
 }
 
+// /      Loglen returns the length of the in-memory log in blocks.
 func (log *log_t) Loglen() int {
 	return log.ml.loglen
 }
 
 // All layers above log read blocks through the log layer, which are mostly
 // wrappers for the the corresponding cache operations.
+// /      Get_fill retrieves a block from cache, populating it from disk if needed.
 func (log *log_t) Get_fill(blkn int, s string, lock bool) *Bdev_block_t {
 	t := stats.Rdtsc()
 	r := log.ml.bcache.Get_fill(blkn, s, lock)
@@ -182,18 +187,22 @@ func (log *log_t) Get_fill(blkn int, s string, lock bool) *Bdev_block_t {
 	return r
 }
 
+// /      Get_zero returns a zeroed block from the cache.
 func (log *log_t) Get_zero(blkn int, s string, lock bool) *Bdev_block_t {
 	return log.ml.bcache.Get_zero(blkn, s, lock)
 }
 
+// /      Get_nofill reserves a block without reading it from disk.
 func (log *log_t) Get_nofill(blkn int, s string, lock bool) *Bdev_block_t {
 	return log.ml.bcache.Get_nofill(blkn, s, lock)
 }
 
+// /      Relse releases a block previously acquired via the log layer.
 func (log *log_t) Relse(blk *Bdev_block_t, s string) {
 	log.ml.bcache.Relse(blk, s)
 }
 
+// /      Stats returns and clears accumulated log statistics.
 func (log *log_t) Stats() string {
 	s1 := "log: " + stats.Stats2String(log.stats)
 	s2 := "mlog: " + stats.Stats2String(log.ml.stats)
@@ -202,7 +211,7 @@ func (log *log_t) Stats() string {
 	return s1 + s2
 }
 
-// / StartLog initializes the on-disk log and starts the commit goroutine.
+// /       StartLog initializes the on-disk log and starts the commit goroutine.
 func StartLog(logstart, loglen int, bcache *bcache_t, logging bool) *log_t {
 	log := &log_t{}
 	log.mk_log(logstart, loglen, bcache, logging)
@@ -212,7 +221,7 @@ func StartLog(logstart, loglen int, bcache *bcache_t, logging bool) *log_t {
 	return log
 }
 
-// / StopLog waits for the commit goroutine to exit and flushes the log.
+// /       StopLog waits for the commit goroutine to exit and flushes the log.
 func (log *log_t) StopLog() {
 	log.Force(true)
 
@@ -389,6 +398,7 @@ func (rl *revokelist_t) len() int {
 type copy_relse_t struct {
 }
 
+// /      Relse frees the page backing the provided block.
 func (cp *copy_relse_t) Relse(blk *Bdev_block_t, s string) {
 	blk.Free_page()
 }
@@ -821,6 +831,7 @@ func (tl *translog_t) remove(tail index_t) {
 	}
 }
 
+// /      String returns a formatted description of the transaction log.
 func (tl *translog_t) String() string {
 	s := ""
 	for _, t := range tl.trans {
