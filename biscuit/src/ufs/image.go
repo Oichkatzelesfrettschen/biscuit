@@ -34,7 +34,7 @@ func bytepg2byte(d *mem.Bytepg_t) []byte {
 	return b
 }
 
-// / Tell returns the current block position of f.
+/// Tell returns the current block position of f.
 func Tell(f *os.File) int {
 	o, err := f.Seek(0, 1)
 	if err != nil {
@@ -281,7 +281,7 @@ func pokeboot(f *os.File, start int) {
 	}
 }
 
-// / MkDisk creates a disk image with a UFS filesystem.
+/// MkDisk creates a disk image with a UFS filesystem.
 func MkDisk(disk string, images []string, nlogblks, ninodeblks, ndatablks int) {
 	fmt.Printf("Make FS disk %s\n", disk)
 	f, err := os.Create(disk)

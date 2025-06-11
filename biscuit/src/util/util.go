@@ -3,10 +3,10 @@ package util
 
 import "unsafe"
 
-// / Min returns the smaller of a and b.
-// / \param a first value
-// / \param b second value
-// / \return the smaller of a and b.
+/// Min returns the smaller of a and b.
+/// \param a first value
+/// \param b second value
+/// \return the smaller of a and b.
 func Min(a, b int) int {
 	if a < b {
 		return a
@@ -14,27 +14,27 @@ func Min(a, b int) int {
 	return b
 }
 
-// / Rounddown aligns v down to the nearest multiple of b.
-// / \param v value to align
-// / \param b alignment boundary
-// / \return v rounded down to a multiple of b.
+/// Rounddown aligns v down to the nearest multiple of b.
+/// \param v value to align
+/// \param b alignment boundary
+/// \return v rounded down to a multiple of b.
 func Rounddown(v int, b int) int {
 	return v - (v % b)
 }
 
-// / Roundup aligns v up to the nearest multiple of b.
-// / \param v value to align
-// / \param b alignment boundary
-// / \return v rounded up to a multiple of b.
+/// Roundup aligns v up to the nearest multiple of b.
+/// \param v value to align
+/// \param b alignment boundary
+/// \return v rounded up to a multiple of b.
 func Roundup(v int, b int) int {
 	return Rounddown(v+b-1, b)
 }
 
-// / Readn reads n bytes from a starting at offset off and returns the value.
-// / \param a byte slice to read from
-// / \param n number of bytes to read
-// / \param off starting offset within a
-// / \return the integer value read from the slice.
+/// Readn reads n bytes from a starting at offset off and returns the value.
+/// \param a byte slice to read from
+/// \param n number of bytes to read
+/// \param off starting offset within a
+/// \return the integer value read from the slice.
 func Readn(a []uint8, n int, off int) int {
 	if off < 0 || off+n > len(a) {
 		panic("Readn out of bounds")
@@ -56,11 +56,11 @@ func Readn(a []uint8, n int, off int) int {
 	return ret
 }
 
-// / Writen writes val using sz bytes into a starting at offset off.
-// / \param a destination slice
-// / \param sz number of bytes to write
-// / \param off starting offset
-// / \param val value to write
+/// Writen writes val using sz bytes into a starting at offset off.
+/// \param a destination slice
+/// \param sz number of bytes to write
+/// \param off starting offset
+/// \param val value to write
 func Writen(a []uint8, sz int, off int, val int) {
 	if off < 0 || off+sz > len(a) {
 		panic("Writen out of bounds")
