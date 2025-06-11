@@ -18,7 +18,7 @@ import "ustr"
 import "vm"
 import "hashtable"
 
-// per-process limits
+/// Ulimit_t describes per-process limits.
 type Ulimit_t struct {
 	Pages  int
 	Nofile uint
@@ -26,6 +26,7 @@ type Ulimit_t struct {
 	Noproc uint
 }
 
+/// Proc_t contains process state.
 type Proc_t struct {
 	Pid int
 	// first thread id
@@ -74,7 +75,7 @@ type Proc_t struct {
 }
 
 type ptable_t struct {
-	ht	*hashtable.Hashtable_t
+	ht *hashtable.Hashtable_t
 }
 
 func (pt *ptable_t) Get(pid int32) (*Proc_t, bool) {
@@ -94,22 +95,24 @@ func (pt *ptable_t) Del(pid int32) {
 }
 
 // Iter may execute concurrently with other lookups, inserts, and deletes
-func (pt *ptable_t) Iter(f func (int32, *Proc_t) bool) {
-	pt.ht.Iter(func (key, value interface{}) bool {
+func (pt *ptable_t) Iter(f func(int32, *Proc_t) bool) {
+	pt.ht.Iter(func(key, value interface{}) bool {
 		pid := key.(int32)
 		p := value.(*Proc_t)
 		return f(pid, p)
 	})
 }
 
-var Ptable = ptable_t {
+var Ptable = ptable_t{
 	ht: hashtable.MkHash(limits.Syslimit.Sysprocs),
 }
 
+/// Tid0 returns the first thread ID of the process.
 func (p *Proc_t) Tid0() defs.Tid_t {
 	return p.tid0
 }
 
+/// Doomed reports whether the process has been killed.
 func (p *Proc_t) Doomed() bool {
 	return p.doomed
 }
@@ -117,6 +120,7 @@ func (p *Proc_t) Doomed() bool {
 // an fd table invariant: every fd must have its file field set. thus the
 // caller cannot set an fd's file field without holding fdl. otherwise you will
 // race with a forking thread when it copies the fd table.
+/// Fd_insert adds an fd to the process table.
 func (p *Proc_t) Fd_insert(f *fd.Fd_t, perms int) (int, bool) {
 	p.Fdl.Lock()
 	a, b := p.fd_insert_inner(f, perms)
@@ -169,6 +173,7 @@ func (p *Proc_t) fd_insert_inner(f *fd.Fd_t, perms int) (int, bool) {
 }
 
 // returns the fd numbers and success
+/// Fd_insert2 adds two file descriptors atomically.
 func (p *Proc_t) Fd_insert2(f1 *fd.Fd_t, perms1 int,
 	f2 *fd.Fd_t, perms2 int) (int, int, bool) {
 	p.Fdl.Lock()
@@ -199,6 +204,7 @@ func (p *Proc_t) Fd_get_inner(fdn int) (*fd.Fd_t, bool) {
 	return ret, ok
 }
 
+/// Fd_get returns the fd by number.
 func (p *Proc_t) Fd_get(fdn int) (*fd.Fd_t, bool) {
 	p.Fdl.Lock()
 	ret, ok := p.Fd_get_inner(fdn)
@@ -207,6 +213,7 @@ func (p *Proc_t) Fd_get(fdn int) (*fd.Fd_t, bool) {
 }
 
 // fdn is not guaranteed to be a sane fd
+/// Fd_del removes and returns the fd by number.
 func (p *Proc_t) Fd_del(fdn int) (*fd.Fd_t, bool) {
 	p.Fdl.Lock()
 	a, b := p.fd_del_inner(fdn)
@@ -235,6 +242,7 @@ func (p *Proc_t) fd_del_inner(fdn int) (*fd.Fd_t, bool) {
 
 // fdn is not guaranteed to be a sane fd. returns the the fd replaced by ofdn
 // and whether it exists and needs to be closed, and success.
+/// Fd_dup duplicates a file descriptor.
 func (p *Proc_t) Fd_dup(ofdn, nfdn int) (*fd.Fd_t, bool, defs.Err_t) {
 	if ofdn == nfdn {
 		return nil, false, 0
@@ -260,6 +268,7 @@ func (p *Proc_t) Fd_dup(ofdn, nfdn int) (*fd.Fd_t, bool, defs.Err_t) {
 
 // returns whether the parent's TLB should be flushed and whether the we
 // successfully copied the parent's address space.
+/// Vm_fork copies the parent's VM into the child.
 func (parent *Proc_t) Vm_fork(child *Proc_t, rsp uintptr) (bool, bool) {
 	parent.Vm.Lockassert_pmap()
 	// first add kernel pml4 entries
@@ -318,6 +327,7 @@ func (parent *Proc_t) Vm_fork(child *Proc_t, rsp uintptr) (bool, bool) {
 }
 
 // flush TLB on all CPUs that may have this processes' pmap loaded
+/// Tlbflush forces a TLB shootdown for the process.
 func (p *Proc_t) Tlbflush() {
 	// this flushes the TLB for now
 	p.Vm.Tlbshoot(0, 2)
@@ -336,6 +346,7 @@ func (p *Proc_t) resched(tid defs.Tid_t, n *tinfo.Tnote_t) bool {
 
 // returns non-zero if this calling process has been killed and the caller
 // should finish the system call.
+/// KillableWait waits on a condition unless the process is killed.
 func KillableWait(cond *sync.Cond) defs.Err_t {
 	if !res.Kernel {
 		cond.Wait()
@@ -462,7 +473,7 @@ func (p *Proc_t) run(tf *[defs.TFSIZE]uintptr, tid defs.Tid_t) {
 		if odec {
 			opmap := mem.Pa_t(op_pmap)
 			otlbp := mem.Physmem.Tlbaddr(opmap)
-			runtime.And64(otlbp, ^uint64(1 << cpunum))
+			runtime.And64(otlbp, ^uint64(1<<cpunum))
 			mem.Physmem.Dec_pmap(opmap)
 		}
 	}
@@ -470,6 +481,7 @@ func (p *Proc_t) run(tf *[defs.TFSIZE]uintptr, tid defs.Tid_t) {
 	Tid_del()
 }
 
+/// Sched_add schedules a new thread to run.
 func (p *Proc_t) Sched_add(tf *[defs.TFSIZE]uintptr, tid defs.Tid_t) {
 	go p.run(tf, tid)
 }
@@ -482,6 +494,7 @@ func (p *Proc_t) _thread_new(t defs.Tid_t) {
 	p.Threadi.Unlock()
 }
 
+/// Thread_new allocates a new thread ID for the process.
 func (p *Proc_t) Thread_new() (defs.Tid_t, bool) {
 	ret, ok := tid_new()
 	if !ok {
@@ -492,6 +505,7 @@ func (p *Proc_t) Thread_new() (defs.Tid_t, bool) {
 }
 
 // undo thread_new(); sched_add() must not have been called on t.
+/// Thread_undo releases a thread ID that was not scheduled.
 func (p *Proc_t) Thread_undo(t defs.Tid_t) {
 	Tid_del()
 
@@ -500,6 +514,7 @@ func (p *Proc_t) Thread_undo(t defs.Tid_t) {
 	p.Threadi.Unlock()
 }
 
+/// Thread_count returns the number of active threads.
 func (p *Proc_t) Thread_count() int {
 	p.Threadi.Lock()
 	ret := len(p.Threadi.Notes)
@@ -508,6 +523,7 @@ func (p *Proc_t) Thread_count() int {
 }
 
 // terminate a single thread
+/// Thread_dead cleans up a finished thread.
 func (p *Proc_t) Thread_dead(tid defs.Tid_t, status int, usestatus bool) {
 	tinfo.ClearCurrent()
 	// XXX exit process if thread is thread0, even if other threads exist
@@ -541,6 +557,7 @@ func (p *Proc_t) Thread_dead(tid defs.Tid_t, status int, usestatus bool) {
 	//tid_del()
 }
 
+/// Doomall marks the entire process for death.
 func (p *Proc_t) Doomall() {
 
 	p.doomed = true
@@ -569,6 +586,7 @@ func (p *Proc_t) Doomall() {
 	p.Threadi.Unlock()
 }
 
+/// Userargs reads the argument list from user memory.
 func (p *Proc_t) Userargs(uva int) ([]ustr.Ustr, defs.Err_t) {
 	if uva == 0 {
 		return nil, 0
@@ -691,21 +709,25 @@ func (p *Proc_t) terminate() {
 
 // returns false if the number of running threads or unreaped child statuses is
 // larger than noproc.
+/// Start_proc records a new child process start.
 func (p *Proc_t) Start_proc(pid int) bool {
 	return p.Mywait._start(pid, true, p.Ulim.Noproc)
 }
 
 // returns false if the number of running threads or unreaped child statuses is
 // larger than noproc.
+/// Start_thread records a new child thread start.
 func (p *Proc_t) Start_thread(t defs.Tid_t) bool {
 	return p.Mywait._start(int(t), false, p.Ulim.Noproc)
 }
 
+/// Proc_check looks up a process by pid.
 func Proc_check(pid int) (*Proc_t, bool) {
 	p, ok := Ptable.Get(int32(pid))
 	return p, ok
 }
 
+/// Proc_del removes a process from the table.
 func Proc_del(pid int) {
 	Ptable.Del(int32(pid))
 }
@@ -723,6 +745,7 @@ var _deflimits = Ulimit_t{
 
 // returns the new proc and success; can fail if the system-wide limit of
 // procs/threads has been reached. the parent's fdtable must be locked.
+/// Proc_new creates a new process structure.
 func Proc_new(name ustr.Ustr, cwd *fd.Cwd_t, fds []*fd.Fd_t, sys Syscall_i) (*Proc_t, bool) {
 	if atomic.AddInt64(&nthreads, 1) >= int64(limits.Syslimit.Sysprocs) {
 		atomic.AddInt64(&nthreads, -1)
@@ -774,6 +797,7 @@ func Proc_new(name ustr.Ustr, cwd *fd.Cwd_t, fds []*fd.Fd_t, sys Syscall_i) (*Pr
 	return ret, true
 }
 
+/// Reap_doomed cleans up a doomed thread.
 func (p *Proc_t) Reap_doomed(tid defs.Tid_t) {
 	if !p.doomed {
 		panic("p not doomed")
@@ -795,12 +819,14 @@ func tid_new() (defs.Tid_t, bool) {
 	return defs.Tid_t(ret), true
 }
 
+/// Tid_del decrements the global thread count.
 func Tid_del() {
 	if atomic.AddInt64(&nthreads, -1) < 0 {
 		panic("oh shite")
 	}
 }
 
+/// CurrentProc returns the currently running process.
 func CurrentProc() *Proc_t {
 	st := tinfo.Current().State
 	proc := st.(*Proc_t)

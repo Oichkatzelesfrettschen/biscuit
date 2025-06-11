@@ -33,6 +33,7 @@ func attach_3400(vendorid, devid int, tag Pcitag_t) {
 		allstats, busmaster, gsi)
 }
 
+/// init prepares the PCI IDE disk for use.
 func (d *pciide_disk_t) init(base, allst, busmaster uintptr) {
 	d.rbase = base
 	d.allstat = allst
@@ -40,14 +41,17 @@ func (d *pciide_disk_t) init(base, allst, busmaster uintptr) {
 	ide_init(d.rbase)
 }
 
+/// Start begins a disk operation.
 func (d *pciide_disk_t) Start(ibuf *Idebuf_t, writing bool) {
 	ide_start(d.rbase, d.allstat, ibuf, writing)
 }
 
+/// Complete finalizes a disk operation.
 func (d *pciide_disk_t) Complete(dst []uint8, writing bool) {
 	ide_complete(d.rbase, dst, writing)
 }
 
+/// Intr returns true if the disk raised an interrupt.
 func (d *pciide_disk_t) Intr() bool {
 	streg := uint16(d.bmaster + 0x02)
 	bmintr := uint(1 << 2)
@@ -58,6 +62,7 @@ func (d *pciide_disk_t) Intr() bool {
 	return true
 }
 
+/// Int_clear acknowledges a disk interrupt.
 func (d *pciide_disk_t) Int_clear() {
 	// read status so disk clears int
 	runtime.Inb(uint16(d.rbase + 7))
