@@ -100,8 +100,8 @@ func pmap_walk(pml4 *mem.Pmap_t, v int, perms mem.Pa_t) (*mem.Pa_t, defs.Err_t) 
 	return ret, 0
 }
 
-// / Pmap_lookup returns the PTE for virtual address v in pml4 if it
-// / exists, or nil otherwise.
+/// Pmap_lookup returns the PTE for virtual address `v` in `pml4` if it
+/// exists, or nil otherwise.
 func Pmap_lookup(pml4 *mem.Pmap_t, v int) *mem.Pa_t {
 	return _pmap_walk(pml4, v, false, 0)
 }
@@ -138,9 +138,11 @@ func pmfree(pml4 *mem.Pmap_t, start, end uintptr, fops mem.Unpin_i) {
 	}
 }
 
-// / Ptefork duplicates the parent's page tables from start to end into
-// / the child pmap. It returns a flag indicating whether the parent's
-// / TLB should be flushed and whether the operation succeeded.
+/// Ptefork duplicates the parent's page tables from virtual range
+/// `start` to `end` into the child pmap `cpmap`. If `shared` is false
+/// the pages are mapped copy-on-write. The returned boolean indicates
+/// whether the parent's TLB should be flushed and whether the
+/// operation succeeded.
 func Ptefork(cpmap, ppmap *mem.Pmap_t, start, end int,
 	shared bool) (bool, bool) {
 	doflush := false
@@ -192,7 +194,7 @@ func Ptefork(cpmap, ppmap *mem.Pmap_t, start, end int,
 	return doflush, true
 }
 
-// / Numtlbs is the number of hardware TLBs in the system.
+/// Numtlbs is the number of hardware TLBs in the system.
 var Numtlbs int = 1
 
 var _tlbslocks [runtime.MAXCPUS]struct {
@@ -270,8 +272,9 @@ func tlb_shootdown(p_pmap mem.Pa_t, tlb_ref *uint64, va uintptr, pgcount int) {
 
 var kplock = sync.Mutex{}
 
-// / Kmalloc allocates a kernel page and maps it at va with the given
-// / permissions. It is used only during secondary CPU startup.
+/// Kmalloc allocates a kernel page and maps it at virtual address `va`
+/// with the provided permissions. It is used only during secondary CPU
+/// startup.
 func Kmalloc(va uintptr, perms mem.Pa_t) {
 	kplock.Lock()
 	defer kplock.Unlock()
@@ -290,7 +293,7 @@ func Kmalloc(va uintptr, perms mem.Pa_t) {
 	*pte = p_pg | PTE_P | perms
 }
 
-// / Assert_no_va_map panics if virtual address va is mapped in pmap.
+/// Assert_no_va_map panics if virtual address `va` is mapped in `pmap`.
 func Assert_no_va_map(pmap *mem.Pmap_t, va uintptr) {
 	pte := Pmap_lookup(pmap, int(va))
 	if pte != nil && *pte&PTE_P != 0 {
@@ -298,8 +301,9 @@ func Assert_no_va_map(pmap *mem.Pmap_t, va uintptr) {
 	}
 }
 
-// / Uvmfree_inner frees all mappings described in vmr and releases the
-// / associated page tables. It is used by process termination and exec.
+/// Uvmfree_inner frees all mappings described in `vmr` from pmap `pmg`
+/// and releases the associated page tables. It is used by process
+/// termination and exec.
 func Uvmfree_inner(pmg *mem.Pmap_t, p_pmap mem.Pa_t, vmr *Vmregion_t) {
 	vmr.Iter(func(vmi *Vminfo_t) {
 		start := uintptr(vmi.Pgn << PGSHIFT)
