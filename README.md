@@ -72,3 +72,9 @@ converts this output to Graphviz for easier visualization.
 ## Contributing
 
 Please feel free to hack on Biscuit! We're happy to accept contributions.
+
+## Porting Roadmap
+
+For a granular plan to migrate the remaining C sources to Go 1.24 see
+[docs/PORTING_ROADMAP.md](docs/PORTING_ROADMAP.md).
+
