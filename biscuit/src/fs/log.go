@@ -202,6 +202,7 @@ func (log *log_t) Stats() string {
 	return s1 + s2
 }
 
+// / StartLog initializes the on-disk log and starts the commit goroutine.
 func StartLog(logstart, loglen int, bcache *bcache_t, logging bool) *log_t {
 	log := &log_t{}
 	log.mk_log(logstart, loglen, bcache, logging)
@@ -211,6 +212,7 @@ func StartLog(logstart, loglen int, bcache *bcache_t, logging bool) *log_t {
 	return log
 }
 
+// / StopLog waits for the commit goroutine to exit and flushes the log.
 func (log *log_t) StopLog() {
 	log.Force(true)
 
@@ -942,8 +944,8 @@ func (log *log_t) apply(tail, head index_t) index_t {
 		return head
 	}
 
-	 // no need to iterate over tail itself since it is a CommitBlk, which
-	 // doesn't need to be installed.
+	// no need to iterate over tail itself since it is a CommitBlk, which
+	// doesn't need to be installed.
 	for i := head - 1; i > tail; i-- {
 		l := log.ml.getmemlog(i)
 		if l.Type == CommitBlk || l.Type == RevokeBlk || l.Type == Canceled {
@@ -967,7 +969,7 @@ func (log *log_t) apply(tail, head index_t) index_t {
 		if t.head > head {
 			break
 		}
-		t.logged.Apply(func (blk *Bdev_block_t) {
+		t.logged.Apply(func(blk *Bdev_block_t) {
 			log.ml.bcache.Relse(blk, "")
 		})
 		t.logged.Delete()

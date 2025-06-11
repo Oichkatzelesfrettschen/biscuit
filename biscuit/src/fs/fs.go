@@ -23,6 +23,8 @@ const iroot = defs.Inum_t(0)
 
 var cons proc.Cons_i
 
+// / Fs_t holds the in-memory state of the filesystem including caches,
+// / logging structures and allocation information.
 type Fs_t struct {
 	ahci         Disk_i
 	superb_start int
@@ -37,6 +39,8 @@ type Fs_t struct {
 	diskfs       bool // disk or in-mem file system?
 }
 
+// / StartFS sets up and returns a new file system.  It exposes the root as a
+// / file descriptor and returns the initialized Fs_t structure.
 func StartFS(mem Blockmem_i, disk Disk_i, console proc.Cons_i, diskfs bool) (*fd.Fd_t, *Fs_t) {
 
 	if mem == nil || disk == nil || console == nil {
@@ -109,34 +113,42 @@ func StartFS(mem Blockmem_i, disk Disk_i, console proc.Cons_i, diskfs bool) (*fd
 	return &fd.Fd_t{Fops: &fsfops_t{priv: iroot, fs: fs, count: 1}}, fs
 }
 
+// / Sizes returns the number of cached inodes and blocks.
 func (fs *Fs_t) Sizes() (int, int) {
 	return fs.icache.cache.Len(), fs.bcache.cache.Len()
 }
 
+// / StopFS shuts down the log associated with the filesystem.
 func (fs *Fs_t) StopFS() {
 	fs.fslog.StopLog()
 }
 
+// / Fs_size returns the number of free inodes and blocks.
 func (fs *Fs_t) Fs_size() (uint, uint) {
 	return fs.ialloc.alloc.nfreebits, fs.balloc.alloc.nfreebits
 }
 
+// / IrefRoot increments the reference count on the root inode.
 func (fs *Fs_t) IrefRoot() *imemnode_t {
 	r := fs.root
 	r.Refup("IrefRoot")
 	return r
 }
 
+// / MkRootCwd constructs a cwd that refers to the filesystem root.
 func (fs *Fs_t) MkRootCwd() *fd.Cwd_t {
 	f := &fd.Fd_t{Fops: &fsfops_t{priv: iroot, fs: fs, count: 0}}
 	cwd := fd.MkRootCwd(f)
 	return cwd
 }
 
+// / Unpin releases a pinned physical address from the buffer cache.
 func (fs *Fs_t) Unpin(pa mem.Pa_t) {
 	fs.bcache.unpin(pa)
 }
 
+// / Fs_op_link performs the actual filesystem link operation and returns any
+// / inodes that must be freed by the caller.
 func (fs *Fs_t) Fs_op_link(old ustr.Ustr, new ustr.Ustr, cwd *fd.Cwd_t) ([]*imemnode_t, defs.Err_t) {
 	opid := fs.fslog.Op_begin("Fs_link")
 	defer fs.fslog.Op_end(opid)
@@ -191,6 +203,7 @@ undo:
 	return deads, err
 }
 
+// / Fs_link links an existing file at a new path.
 func (fs *Fs_t) Fs_link(old ustr.Ustr, new ustr.Ustr, cwd *fd.Cwd_t) defs.Err_t {
 	deads, err := fs.Fs_op_link(old, new, cwd)
 	for _, dead := range deads {
@@ -199,6 +212,7 @@ func (fs *Fs_t) Fs_link(old ustr.Ustr, new ustr.Ustr, cwd *fd.Cwd_t) defs.Err_t 
 	return err
 }
 
+// / Fs_op_unlink performs the unlink operation and returns a possibly dead inode.
 func (fs *Fs_t) Fs_op_unlink(paths ustr.Ustr, cwd *fd.Cwd_t, wantdir bool) (*imemnode_t, defs.Err_t) {
 	opid := fs.fslog.Op_begin("fs_unlink")
 	defer fs.fslog.Op_end(opid)
@@ -279,6 +293,7 @@ func (fs *Fs_t) Fs_op_unlink(paths ustr.Ustr, cwd *fd.Cwd_t, wantdir bool) (*ime
 	return dead, 0
 }
 
+// / Fs_unlink removes a path and frees resources associated with the inode.
 func (fs *Fs_t) Fs_unlink(paths ustr.Ustr, cwd *fd.Cwd_t, wantdir bool) defs.Err_t {
 	dead, err := fs.Fs_op_unlink(paths, cwd, wantdir)
 	if dead != nil {
@@ -292,6 +307,8 @@ var _renamelock = sync.Mutex{}
 
 // first return value is inodes to refdown, second return is inode which needs
 // to be freed...
+// / Fs_op_rename renames a path to a new location and returns inodes that
+// / require cleanup by the caller.
 func (fs *Fs_t) Fs_op_rename(oldp, newp ustr.Ustr, cwd *fd.Cwd_t) ([]*imemnode_t, *imemnode_t, defs.Err_t) {
 	odirs, ofn := bpath.Sdirname(oldp)
 	ndirs, nfn := bpath.Sdirname(newp)
@@ -501,6 +518,7 @@ func (fs *Fs_t) Fs_op_rename(oldp, newp ustr.Ustr, cwd *fd.Cwd_t) ([]*imemnode_t
 	return refs, nil, 0
 }
 
+// / Fs_rename renames a file or directory.
 func (fs *Fs_t) Fs_rename(oldp, newp ustr.Ustr, cwd *fd.Cwd_t) defs.Err_t {
 	refs, dead, err := fs.Fs_op_rename(oldp, newp, cwd)
 	for _, r := range refs {
@@ -839,6 +857,7 @@ func (fo *fsfops_t) Shutdown(read, write bool) defs.Err_t {
 	return -defs.ENOTSOCK
 }
 
+// / Devfops_t identifies a special device handled by the filesystem.
 type Devfops_t struct {
 	Maj int
 	Min int
@@ -873,11 +892,13 @@ func stat_read(ub fdops.Userio_i, offset int) (int, defs.Err_t) {
 	return ret, 0
 }
 
+// / Perfrips_t holds profiling information about specific PC addresses.
 type Perfrips_t struct {
 	Rips  []uintptr
 	Times []int
 }
 
+// / Init fills the Perfrips_t with profiling data.
 func (pr *Perfrips_t) Init(m map[uintptr]int) {
 	l := len(m)
 	pr.Rips = make([]uintptr, l)
@@ -890,18 +911,22 @@ func (pr *Perfrips_t) Init(m map[uintptr]int) {
 	}
 }
 
+// / Reset clears all recorded profiling information.
 func (pr *Perfrips_t) Reset() {
 	pr.Rips, pr.Times = nil, nil
 }
 
+// / Len returns the number of recorded addresses.
 func (pr *Perfrips_t) Len() int {
 	return len(pr.Rips)
 }
 
+// / Less implements sort.Interface for ordering.
 func (pr *Perfrips_t) Less(i, j int) bool {
 	return pr.Times[i] < pr.Times[j]
 }
 
+// / Swap implements sort.Interface for sorting.
 func (pr *Perfrips_t) Swap(i, j int) {
 	pr.Rips[i], pr.Rips[j] = pr.Rips[j], pr.Rips[i]
 	pr.Times[i], pr.Times[j] = pr.Times[j], pr.Times[i]
@@ -1230,6 +1255,7 @@ func (raw *rawdfops_t) Shutdown(read, write bool) defs.Err_t {
 	return -defs.ENOTSOCK
 }
 
+// / Fs_mkdir creates a new directory at the provided path.
 func (fs *Fs_t) Fs_mkdir(paths ustr.Ustr, mode int, cwd *fd.Cwd_t) defs.Err_t {
 	refs, dead, err := fs.Fs_op_mkdir(paths, mode, cwd)
 	for _, ref := range refs {
@@ -1244,6 +1270,8 @@ func (fs *Fs_t) Fs_mkdir(paths ustr.Ustr, mode int, cwd *fd.Cwd_t) defs.Err_t {
 }
 
 // returns refs, dead, and error...
+// / Fs_op_mkdir creates a directory and returns references that need dropping
+// / by the caller.
 func (fs *Fs_t) Fs_op_mkdir(paths ustr.Ustr, mode int, cwd *fd.Cwd_t) ([]*imemnode_t, *imemnode_t, defs.Err_t) {
 	opid := fs.fslog.Op_begin("fs_mkdir")
 	defer fs.fslog.Op_end(opid)
@@ -1297,12 +1325,14 @@ outunlink:
 }
 
 // a type to represent on-disk files
+// / Fsfile_t describes a file opened on disk.
 type Fsfile_t struct {
 	Inum  defs.Inum_t
 	Major int
 	Minor int
 }
 
+// / Fs_open_inner opens a file and returns a descriptor describing it.
 func (fs *Fs_t) Fs_open_inner(paths ustr.Ustr, flags defs.Fdopt_t, mode int, cwd *fd.Cwd_t, major, minor int) (Fsfile_t, defs.Err_t) {
 	ret, dead, err := fs._fs_open_inner(paths, flags, mode, cwd, major, minor)
 	if dead != nil {
@@ -1413,6 +1443,7 @@ func (fs *Fs_t) _fs_open_inner(paths ustr.Ustr, flags defs.Fdopt_t, mode int, cw
 	return ret, nil, 0
 }
 
+// / Makefake returns a dummy file descriptor for testing.
 func (fs *Fs_t) Makefake() *fd.Fd_t {
 	return nil
 	//ret := &fd.Fd_t{}
@@ -1434,6 +1465,7 @@ func (fs *Fs_t) Makefake() *fd.Fd_t {
 // socket files cannot be open(2)'ed (must use connect(2)/sendto(2) etc.)
 var _denyopen = map[int]bool{defs.D_SUD: true, defs.D_SUS: true}
 
+// / Fs_open opens a path and returns a new file descriptor.
 func (fs *Fs_t) Fs_open(paths ustr.Ustr, flags defs.Fdopt_t, mode int, cwd *fd.Cwd_t, major, minor int) (*fd.Fd_t, defs.Err_t) {
 	fs.istats.Nopen.Inc()
 	fsf, err := fs.Fs_open_inner(paths, flags, mode, cwd, major, minor)
@@ -1477,6 +1509,7 @@ func (fs *Fs_t) Fs_open(paths ustr.Ustr, flags defs.Fdopt_t, mode int, cwd *fd.C
 	return ret, 0
 }
 
+// / Fs_close closes the file represented by the given inode number.
 func (fs *Fs_t) Fs_close(priv defs.Inum_t) defs.Err_t {
 	opid := fs.fslog.Op_begin("Fs_close")
 
@@ -1499,6 +1532,7 @@ func (fs *Fs_t) Fs_close(priv defs.Inum_t) defs.Err_t {
 	return 0
 }
 
+// / Fs_stat retrieves file information for the provided path.
 func (fs *Fs_t) Fs_stat(path ustr.Ustr, st *stat.Stat_t, cwd *fd.Cwd_t) defs.Err_t {
 	opid := opid_t(0)
 
@@ -1522,6 +1556,7 @@ func (fs *Fs_t) Fs_stat(path ustr.Ustr, st *stat.Stat_t, cwd *fd.Cwd_t) defs.Err
 
 // Sync the file system to disk. XXX If Biscuit supported fsync, we could be
 // smarter and flush only the dirty blocks of particular inode.
+// / Fs_sync flushes all filesystem metadata to stable storage.
 func (fs *Fs_t) Fs_sync() defs.Err_t {
 	if !fs.diskfs {
 		return 0
@@ -1531,6 +1566,7 @@ func (fs *Fs_t) Fs_sync() defs.Err_t {
 	return 0
 }
 
+// / Fs_syncapply flushes metadata and applies the log immediately.
 func (fs *Fs_t) Fs_syncapply() defs.Err_t {
 	if !fs.diskfs {
 		return 0
@@ -1645,6 +1681,7 @@ func (fs *Fs_t) fs_namei_locked(opid opid_t, paths ustr.Ustr, cwd *fd.Cwd_t, s s
 	return fs._fs_namei_locked(opid, paths, cwd)
 }
 
+// / Fs_evict drops half of the cache entries and returns the new sizes.
 func (fs *Fs_t) Fs_evict() (int, int) {
 	if !fs.diskfs {
 		panic("no evict")
@@ -1655,6 +1692,7 @@ func (fs *Fs_t) Fs_evict() (int, int) {
 	return fs.Sizes()
 }
 
+// / Fs_statistics dumps collected file system statistics and resets them.
 func (fs *Fs_t) Fs_statistics() string {
 	s := fs.istats.Stats()
 	if fs.diskfs {
