@@ -17,6 +17,7 @@ import "stats"
 import "ustr"
 import "util"
 
+// / inode_stats_t collects statistics about inode operations.
 type inode_stats_t struct {
 	Nopen       stats.Counter_t
 	Nnamei      stats.Counter_t
@@ -47,12 +48,14 @@ type inode_stats_t struct {
 	Ciupdate    stats.Cycles_t
 }
 
+// / Stats resets and returns the accumulated inode statistics.
 func (is *inode_stats_t) Stats() string {
 	s := "inode" + stats.Stats2String(*is)
 	*is = inode_stats_t{}
 	return s
 }
 
+// / Inode_t provides indexed access to the on-disk inode structure.
 type Inode_t struct {
 	Iblk *Bdev_block_t
 	Ioff int
@@ -124,6 +127,7 @@ func (ind *Inode_t) addr(i int) int {
 	return fieldr(ind.Iblk.Data, ifield(ind.Ioff, addroff+i))
 }
 
+// / W_itype updates the inode's type field.
 func (ind *Inode_t) W_itype(n int) {
 	if n < I_FIRST || n > I_LAST {
 		panic("weird inode type")
@@ -131,10 +135,12 @@ func (ind *Inode_t) W_itype(n int) {
 	fieldw(ind.Iblk.Data, ifield(ind.Ioff, 0), n)
 }
 
+// / W_linkcount writes the link count.
 func (ind *Inode_t) W_linkcount(n int) {
 	fieldw(ind.Iblk.Data, ifield(ind.Ioff, 1), n)
 }
 
+// / W_size records the inode's size in bytes.
 func (ind *Inode_t) W_size(n int) {
 	fieldw(ind.Iblk.Data, ifield(ind.Ioff, 2), n)
 }
@@ -157,6 +163,7 @@ func (ind *Inode_t) w_dindirect(blk int) {
 	fieldw(ind.Iblk.Data, ifield(ind.Ioff, 6), blk)
 }
 
+// / W_addr sets the i'th direct block address.
 func (ind *Inode_t) W_addr(i int, blk int) {
 	if i < 0 || i > NIADDRS {
 		panic("bad inode block index")

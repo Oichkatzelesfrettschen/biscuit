@@ -5,12 +5,16 @@ import "unsafe"
 import "util"
 import "time"
 
+// / Ip4_t represents an IPv4 address in host byte order.
 type Ip4_t uint32
 
+// / Be16 is a 16-bit big-endian value.
 type Be16 uint16
+
+// / Be32 is a 32-bit big-endian value.
 type Be32 uint32
 
-// convert little- to big-endian.
+// / Ip2sl converts an IPv4 address to network byte order.
 func Ip2sl(sl []uint8, ip Ip4_t) {
 	sl[0] = uint8(ip >> 24)
 	sl[1] = uint8(ip >> 16)
@@ -18,6 +22,7 @@ func Ip2sl(sl []uint8, ip Ip4_t) {
 	sl[3] = uint8(ip >> 0)
 }
 
+// / Sl2ip converts a 4 byte slice to an IPv4 address.
 func Sl2ip(sl []uint8) Ip4_t {
 	ret := Ip4_t(sl[0]) << 24
 	ret |= Ip4_t(sl[1]) << 16
@@ -26,20 +31,24 @@ func Sl2ip(sl []uint8) Ip4_t {
 	return ret
 }
 
+// / Ip2str formats an IPv4 address in dotted notation.
 func Ip2str(ip Ip4_t) string {
 	return fmt.Sprintf("%d.%d.%d.%d", ip>>24, uint8(ip>>16),
 		uint8(ip>>8), uint8(ip))
 }
 
+// / Mac2str formats a MAC address as a string.
 func Mac2str(m []uint8) string {
 	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", m[0], m[1], m[2],
 		m[3], m[4], m[5])
 }
 
+// / Htons converts a 16-bit value to network byte order.
 func Htons(v uint16) Be16 {
 	return Be16(v>>8 | (v&0xff)<<8)
 }
 
+// / Htonl converts a 32-bit value to network byte order.
 func Htonl(v uint32) Be32 {
 	r := (v & 0x000000ff) << 24
 	r |= (v & 0x0000ff00) << 8
@@ -48,10 +57,12 @@ func Htonl(v uint32) Be32 {
 	return Be32(r)
 }
 
+// / Ntohs converts a 16-bit big-endian value to host order.
 func Ntohs(v Be16) uint16 {
 	return uint16(v>>8 | (v&0xff)<<8)
 }
 
+// / Ntohl converts a 32-bit big-endian value to host order.
 func Ntohl(v Be32) uint32 {
 	r := (v & 0x000000ff) << 24
 	r |= (v & 0x0000ff00) << 8
@@ -65,9 +76,11 @@ const ARPLEN = int(unsafe.Sizeof(Arpv4_t{}))
 // always big-endian
 const macsz int = 6
 
+// / Mac_t represents a 6-byte hardware address.
 type Mac_t [macsz]uint8
 
 // arpv4_t gets padded if tpa is a uint32 instead of a byte array...
+// / Arpv4_t represents an ARP packet for IPv4.
 type Arpv4_t struct {
 	Etherhdr_t
 	htype Be16
@@ -95,6 +108,7 @@ func (ar *Arpv4_t) _init(smac *Mac_t) {
 	copy(ar.smac[:], smac[:])
 }
 
+// / Init_req prepares an ARP request packet.
 func (ar *Arpv4_t) Init_req(smac *Mac_t, sip, qip Ip4_t) {
 	ar._init(smac)
 	req := Htons(1)
@@ -109,6 +123,7 @@ func (ar *Arpv4_t) Init_req(smac *Mac_t, sip, qip Ip4_t) {
 	}
 }
 
+// / Init_reply prepares an ARP reply packet.
 func (ar *Arpv4_t) Init_reply(smac, dmac *Mac_t, sip, dip Ip4_t) {
 	ar._init(smac)
 	reply := Htons(2)
@@ -120,6 +135,7 @@ func (ar *Arpv4_t) Init_reply(smac, dmac *Mac_t, sip, dip Ip4_t) {
 	copy(ar.dmac[:], dmac[:])
 }
 
+// / Bytes returns the ARP packet as a byte slice.
 func (ar *Arpv4_t) Bytes() []uint8 {
 	return (*[ARPLEN]uint8)(unsafe.Pointer(ar))[:]
 }
@@ -127,6 +143,7 @@ func (ar *Arpv4_t) Bytes() []uint8 {
 const IP4LEN = int(unsafe.Sizeof(Ip4hdr_t{}))
 
 // no options
+// / Ip4hdr_t is a minimal IPv4 header without options.
 type Ip4hdr_t struct {
 	Vers_hdr uint8
 	Dscp     uint8
@@ -140,6 +157,7 @@ type Ip4hdr_t struct {
 	Dip      [4]uint8
 }
 
+// / Sl2iphdr parses an IPv4 header from the front of buf.
 func Sl2iphdr(buf []uint8) (*Ip4hdr_t, []uint8, bool) {
 	if len(buf) < IP4LEN {
 		return nil, nil, false
@@ -164,26 +182,31 @@ func (i4 *Ip4hdr_t) _init(l4len int, sip, dip Ip4_t, proto uint8) {
 	Ip2sl(i4.Dip[:], dip)
 }
 
+// / Init_icmp populates the header fields for an ICMP packet.
 func (i4 *Ip4hdr_t) Init_icmp(icmplen int, sip, dip Ip4_t) {
 	icmp := uint8(0x01)
 	i4._init(icmplen, sip, dip, icmp)
 }
 
+// / Init_tcp populates the header fields for a TCP packet.
 func (i4 *Ip4hdr_t) Init_tcp(tcplen int, sip, dip Ip4_t) {
 	tcp := uint8(0x06)
 	i4._init(tcplen, sip, dip, tcp)
 }
 
+// / Bytes returns the header as a byte slice.
 func (i4 *Ip4hdr_t) Bytes() []uint8 {
 	return (*[IP4LEN]uint8)(unsafe.Pointer(i4))[:]
 }
 
+// / Hdrlen returns the size of the header in bytes.
 func (i4 *Ip4hdr_t) Hdrlen() int {
 	return IP4LEN
 }
 
 const ETHERLEN = int(unsafe.Sizeof(Etherhdr_t{}))
 
+// / Etherhdr_t is an Ethernet header.
 type Etherhdr_t struct {
 	dmac  Mac_t
 	smac  Mac_t
@@ -199,15 +222,18 @@ func (et *Etherhdr_t) _init(smac, dmac []uint8, etype uint16) {
 	et.etype = Htons(etype)
 }
 
+// / Init_ip4 initializes the header for an IPv4 packet.
 func (et *Etherhdr_t) Init_ip4(smac, dmac []uint8) {
 	etype := uint16(0x0800)
 	et._init(smac, dmac, etype)
 }
 
+// / Bytes returns the Ethernet header as a byte slice.
 func (e *Etherhdr_t) Bytes() []uint8 {
 	return (*[ETHERLEN]uint8)(unsafe.Pointer(e))[:]
 }
 
+// / Tcphdr_t represents a minimal TCP header.
 type Tcphdr_t struct {
 	Sport   Be16
 	Dport   Be16
@@ -232,12 +258,14 @@ func (t *Tcphdr_t) _init(sport, dport uint16, seq, ack uint32) {
 	t.Dataoff = 0x50
 }
 
+// / Init_syn initializes a SYN packet header.
 func (t *Tcphdr_t) Init_syn(Sport, Dport uint16, seq uint32) {
 	t._init(Sport, Dport, seq, 0)
 	synf := uint8(1 << 1)
 	t.Flags |= synf
 }
 
+// / Init_synack initializes a SYN+ACK packet header.
 func (t *Tcphdr_t) Init_synack(Sport, Dport uint16, seq, ack uint32) {
 	t._init(Sport, Dport, seq, ack)
 	synf := uint8(1 << 1)
@@ -245,18 +273,21 @@ func (t *Tcphdr_t) Init_synack(Sport, Dport uint16, seq, ack uint32) {
 	t.Flags |= synf | ackf
 }
 
+// / Init_ack initializes an ACK packet header.
 func (t *Tcphdr_t) Init_ack(Sport, Dport uint16, seq, ack uint32) {
 	t._init(Sport, Dport, seq, ack)
 	ackf := uint8(1 << 4)
 	t.Flags |= ackf
 }
 
+// / Init_rst initializes a RST packet header.
 func (t *Tcphdr_t) Init_rst(Sport, Dport uint16, seq uint32) {
 	t._init(Sport, Dport, seq, 0)
 	rst := uint8(1 << 2)
 	t.Flags |= rst
 }
 
+// / Set_opt populates the TCP option fields and updates Dataoff.
 func (t *Tcphdr_t) Set_opt(opt []uint8, tsopt []uint8, tsecr uint32) {
 	if len(tsopt) < 10 {
 		panic("not enough room for timestamps")
@@ -271,39 +302,47 @@ func (t *Tcphdr_t) Set_opt(opt []uint8, tsopt []uint8, tsecr uint32) {
 	util.Writen(tsopt, 4, 6, int(Htonl(tsecr)))
 }
 
+// / Hdrlen returns the TCP header length in bytes.
 func (t *Tcphdr_t) Hdrlen() int {
 	return int(t.Dataoff>>4) * 4
 }
 
+// / Issyn reports whether the SYN flag is set.
 func (t *Tcphdr_t) Issyn() bool {
 	synf := uint8(1 << 1)
 	return t.Flags&synf != 0
 }
 
+// / Isack reports whether the ACK flag is set and returns the ack number.
 func (t *Tcphdr_t) Isack() (uint32, bool) {
 	ackf := uint8(1 << 4)
 	return Ntohl(t.Ack), t.Flags&ackf != 0
 }
 
+// / Isrst reports whether the RST flag is set.
 func (t *Tcphdr_t) Isrst() bool {
 	rst := uint8(1 << 2)
 	return t.Flags&rst != 0
 }
 
+// / Isfin reports whether the FIN flag is set.
 func (t *Tcphdr_t) Isfin() bool {
 	fin := uint8(1 << 0)
 	return t.Flags&fin != 0
 }
 
+// / Ispush reports whether the PSH flag is set.
 func (t *Tcphdr_t) Ispush() bool {
 	pu := uint8(1 << 3)
 	return t.Flags&pu != 0
 }
 
+// / Bytes returns the TCP header as a byte slice.
 func (t *Tcphdr_t) Bytes() []uint8 {
 	return (*[TCPLEN]uint8)(unsafe.Pointer(t))[:]
 }
 
+// / Dump prints a human readable representation of the header.
 func (t *Tcphdr_t) Dump(sip, dip Ip4_t, opt Tcpopt_t, dlen int) {
 	s := fmt.Sprintf("%s:%d -> %s:%d", Ip2str(sip), Ntohs(t.Sport),
 		Ip2str(dip), Ntohs(t.Dport))
@@ -339,6 +378,7 @@ func (t *Tcphdr_t) Dump(sip, dip Ip4_t, opt Tcpopt_t, dlen int) {
 	fmt.Printf("%s\n", s)
 }
 
+// / Tcpopt_t contains parsed TCP option values.
 type Tcpopt_t struct {
 	Wshift uint
 	Tsval  uint32
@@ -423,6 +463,7 @@ func Sl2tcphdr(buf []uint8) (*Tcphdr_t, Tcpopt_t, []uint8, bool) {
 	return p, opt, rest, true
 }
 
+// / Tcppkt_t bundles an Ethernet, IP and TCP header for convenience.
 type Tcppkt_t struct {
 	Ether  Etherhdr_t
 	Iphdr  Ip4hdr_t
@@ -432,6 +473,7 @@ type Tcppkt_t struct {
 // writes pseudo header partial cksum to the TCP header cksum field. the sum is
 // not complemented so that the partial pseudo header cksum can be summed with
 // the rest of the TCP cksum (offloaded to the NIC).
+// / Crc computes the pseudo header checksum.
 func (tp *Tcppkt_t) Crc(l4len int, sip, dip Ip4_t) {
 	sum := uint32(uint16(sip))
 	sum += uint32(uint16(sip >> 16))
@@ -446,10 +488,12 @@ func (tp *Tcppkt_t) Crc(l4len int, sip, dip Ip4_t) {
 	tp.Tcphdr.Cksum = Htons(uint16(sum))
 }
 
+// / Hdrbytes returns slices for each header in the packet.
 func (tp *Tcppkt_t) Hdrbytes() ([]uint8, []uint8, []uint8) {
 	return tp.Ether.Bytes(), tp.Iphdr.Bytes(), tp.Tcphdr.Bytes()
 }
 
+// / Icmppkt_t represents an ICMP packet with headers.
 type Icmppkt_t struct {
 	Ether Etherhdr_t
 	Iphdr Ip4hdr_t
@@ -463,6 +507,7 @@ type Icmppkt_t struct {
 	Data  []uint8
 }
 
+// / Init fills the packet headers for the given addresses and type.
 func (ic *Icmppkt_t) Init(smac, dmac *Mac_t, sip, dip Ip4_t, typ uint8,
 	data []uint8) {
 	var z Icmppkt_t
@@ -474,6 +519,7 @@ func (ic *Icmppkt_t) Init(smac, dmac *Mac_t, sip, dip Ip4_t, typ uint8,
 	ic.Data = data
 }
 
+// / Crc computes the ICMP checksum over the packet.
 func (ic *Icmppkt_t) Crc() {
 	sum := uint32(ic.Typ) + uint32(ic.Code)<<8
 	sum += uint32(ic.Cksum)
@@ -496,6 +542,7 @@ func (ic *Icmppkt_t) Crc() {
 	ic.Cksum = ret
 }
 
+// / Hdrbytes returns all header bytes of the ICMP packet.
 func (ic *Icmppkt_t) Hdrbytes() []uint8 {
 	const hdrsz = ETHERLEN + IP4LEN + 2*1 + 3*2
 	return (*[hdrsz]uint8)(unsafe.Pointer(ic))[:]
