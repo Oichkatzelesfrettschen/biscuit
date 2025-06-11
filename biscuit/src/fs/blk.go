@@ -10,19 +10,19 @@ import "mem"
 // (fopendir, BSIZE), usertests.c (BSIZE).
 const BSIZE = 4096 /// size of a disk block in bytes
 
-// / Blockmem_i abstracts page allocation for block buffers.
+/// Blockmem_i abstracts page allocation for block buffers.
 type Blockmem_i interface {
 	Alloc() (mem.Pa_t, *mem.Bytepg_t, bool)
 	Free(mem.Pa_t)
 	Refup(mem.Pa_t)
 }
 
-// / Block_cb_i is implemented by callers wanting release callbacks.
+/// Block_cb_i is implemented by callers wanting release callbacks.
 type Block_cb_i interface {
 	Relse(*Bdev_block_t, string)
 }
 
-// / blktype_t enumerates the types of blocks stored on disk.
+/// blktype_t enumerates the types of blocks stored on disk.
 type blktype_t int
 
 const (
@@ -31,22 +31,22 @@ const (
 	RevokeBlk blktype_t = -2 /// log revoke record
 )
 
-// / Bdev_block_t represents a cached disk block.
+/// Bdev_block_t represents a cached disk block.
 type Bdev_block_t struct {
-	sync.Mutex
-	Block      int
-	Type       blktype_t
-	_try_evict bool
-	Pa         mem.Pa_t
-	Data       *mem.Bytepg_t
-	Ref        *Objref_t
-	Name       string
-	Mem        Blockmem_i
-	Disk       Disk_i
-	Cb         Block_cb_i
+        sync.Mutex
+        Block      int        /// block number
+        Type       blktype_t  /// block type
+        _try_evict bool
+        Pa         mem.Pa_t   /// physical address
+        Data       *mem.Bytepg_t /// backing page
+        Ref        *Objref_t  /// cache reference
+        Name       string     /// debug name
+        Mem        Blockmem_i /// memory allocator
+        Disk       Disk_i     /// disk device
+        Cb         Block_cb_i /// release callback
 }
 
-// / Bdevcmd_t enumerates disk request types.
+/// Bdevcmd_t enumerates disk request types.
 type Bdevcmd_t uint
 
 const (
@@ -55,31 +55,30 @@ const (
 	BDEV_FLUSH           = 3 /// flush outstanding writes
 )
 
-// / BlkList_t wraps a list.List of block pointers.
+/// BlkList_t wraps a list.List of block pointers.
 type BlkList_t struct {
 	l *list.List
 	e *list.Element // iterator
 }
 
-// / MkBlkList creates an empty block list.
-// / MkBlkList creates an empty block list.
+/// MkBlkList creates an empty block list.
 func MkBlkList() *BlkList_t {
 	bl := &BlkList_t{}
 	bl.l = list.New()
 	return bl
 }
 
-// / Len returns the number of blocks in the list.
+/// Len returns the number of blocks in the list.
 func (bl *BlkList_t) Len() int {
 	return bl.l.Len()
 }
 
-// / PushBack appends a block to the list.
+/// PushBack appends a block to the list.
 func (bl *BlkList_t) PushBack(b *Bdev_block_t) {
 	bl.l.PushBack(b)
 }
 
-// / FrontBlock resets the iterator and returns the first block.
+/// FrontBlock resets the iterator and returns the first block.
 func (bl *BlkList_t) FrontBlock() *Bdev_block_t {
 	if bl.l.Front() == nil {
 		return nil
@@ -89,7 +88,7 @@ func (bl *BlkList_t) FrontBlock() *Bdev_block_t {
 	}
 }
 
-// / Back returns the last block in the list or nil.
+/// Back returns the last block in the list or nil.
 func (bl *BlkList_t) Back() *Bdev_block_t {
 	if bl.l.Back() == nil {
 		return nil
@@ -98,7 +97,7 @@ func (bl *BlkList_t) Back() *Bdev_block_t {
 	}
 }
 
-// / BackBlock returns the last block or panics if empty.
+/// BackBlock returns the last block or panics if empty.
 func (bl *BlkList_t) BackBlock() *Bdev_block_t {
 	if bl.l.Back() == nil {
 		panic("bl.Front")
@@ -107,7 +106,7 @@ func (bl *BlkList_t) BackBlock() *Bdev_block_t {
 	}
 }
 
-// / RemoveBlock removes the block with the given number.
+/// RemoveBlock removes the block with the given number.
 func (bl *BlkList_t) RemoveBlock(block int) {
 	var next *list.Element
 	for e := bl.l.Front(); e != nil; e = next {
@@ -119,7 +118,7 @@ func (bl *BlkList_t) RemoveBlock(block int) {
 	}
 }
 
-// / NextBlock advances the iterator and returns the next block.
+/// NextBlock advances the iterator and returns the next block.
 func (bl *BlkList_t) NextBlock() *Bdev_block_t {
 	if bl.e == nil {
 		return nil
@@ -132,28 +131,28 @@ func (bl *BlkList_t) NextBlock() *Bdev_block_t {
 	}
 }
 
-// / Apply calls f for each block in the list.
+/// Apply calls f for each block in the list.
 func (bl *BlkList_t) Apply(f func(*Bdev_block_t)) {
 	for b := bl.FrontBlock(); b != nil; b = bl.NextBlock() {
 		f(b)
 	}
 }
 
-// / Print dumps each block number to standard output.
+/// Print dumps each block number to standard output.
 func (bl *BlkList_t) Print() {
 	bl.Apply(func(b *Bdev_block_t) {
 		fmt.Printf("b %v\n", b)
 	})
 }
 
-// / Append adds all blocks from l to the end of bl.
+/// Append adds all blocks from l to the end of bl.
 func (bl *BlkList_t) Append(l *BlkList_t) {
 	for b := l.FrontBlock(); b != nil; b = l.NextBlock() {
 		bl.PushBack(b)
 	}
 }
 
-// / Delete removes all elements from the list.
+/// Delete removes all elements from the list.
 func (bl *BlkList_t) Delete() {
 	var next *list.Element
 	for e := bl.l.Front(); e != nil; e = next {
@@ -162,7 +161,7 @@ func (bl *BlkList_t) Delete() {
 	}
 }
 
-// / Bdev_req_t describes a block device request.
+/// Bdev_req_t describes a block device request.
 type Bdev_req_t struct {
 	Cmd   Bdevcmd_t
 	Blks  *BlkList_t
@@ -170,7 +169,7 @@ type Bdev_req_t struct {
 	Sync  bool
 }
 
-// / MkRequest allocates a new block request structure.
+/// MkRequest allocates a new block request structure.
 func MkRequest(blks *BlkList_t, cmd Bdevcmd_t, sync bool) *Bdev_req_t {
 	ret := &Bdev_req_t{}
 	ret.Blks = blks
@@ -180,23 +179,23 @@ func MkRequest(blks *BlkList_t, cmd Bdevcmd_t, sync bool) *Bdev_req_t {
 	return ret
 }
 
-// / Disk_i represents a physical disk interface.
+/// Disk_i represents a physical disk interface.
 type Disk_i interface {
 	Start(*Bdev_req_t) bool
 	Stats() string
 }
 
-// / Key returns the lookup key for the block cache.
+/// Key returns the lookup key for the block cache.
 func (blk *Bdev_block_t) Key() int {
 	return blk.Block
 }
 
-// / EvictFromCache is called before the block leaves the cache.
+/// EvictFromCache is called before the block leaves the cache.
 func (blk *Bdev_block_t) EvictFromCache() {
 	// nothing to be done right before being evicted
 }
 
-// / EvictDone finalizes eviction by freeing memory.
+/// EvictDone finalizes eviction by freeing memory.
 func (blk *Bdev_block_t) EvictDone() {
 	if bdev_debug {
 		fmt.Printf("Done: block %v %#x\n", blk.Block, blk.Pa)
@@ -204,17 +203,17 @@ func (blk *Bdev_block_t) EvictDone() {
 	blk.Mem.Free(blk.Pa)
 }
 
-// / Tryevict marks the block for eviction on release.
+/// Tryevict marks the block for eviction on release.
 func (blk *Bdev_block_t) Tryevict() {
 	blk._try_evict = true
 }
 
-// / Evictnow reports whether the block should be evicted.
+/// Evictnow reports whether the block should be evicted.
 func (blk *Bdev_block_t) Evictnow() bool {
 	return blk._try_evict
 }
 
-// / Done releases a reference via the callback.
+/// Done releases a reference via the callback.
 func (blk *Bdev_block_t) Done(s string) {
 	if blk.Cb == nil {
 		panic("wtf")
@@ -222,7 +221,7 @@ func (blk *Bdev_block_t) Done(s string) {
 	blk.Cb.Relse(blk, s)
 }
 
-// / Write synchronously writes the block to disk.
+/// Write synchronously writes the block to disk.
 func (b *Bdev_block_t) Write() {
 	if bdev_debug {
 		fmt.Printf("bdev_write %v %v\n", b.Block, b.Name)
@@ -238,7 +237,7 @@ func (b *Bdev_block_t) Write() {
 	}
 }
 
-// / Write_async writes the block to disk without waiting for completion.
+/// Write_async writes the block to disk without waiting for completion.
 func (b *Bdev_block_t) Write_async() {
 	if bdev_debug {
 		fmt.Printf("bdev_write_async %v %s\n", b.Block, b.Name)
@@ -252,7 +251,7 @@ func (b *Bdev_block_t) Write_async() {
 	b.Disk.Start(ider)
 }
 
-// / Read reads the block from disk synchronously.
+/// Read reads the block from disk synchronously.
 func (b *Bdev_block_t) Read() {
 	l := MkBlkList()
 	l.PushBack(b)
@@ -271,7 +270,7 @@ func (b *Bdev_block_t) Read() {
 
 }
 
-// / New_page allocates backing memory for the block.
+/// New_page allocates backing memory for the block.
 func (blk *Bdev_block_t) New_page() {
 	pa, d, ok := blk.Mem.Alloc()
 	if !ok {
@@ -281,14 +280,14 @@ func (blk *Bdev_block_t) New_page() {
 	blk.Data = d
 }
 
-// / MkBlock_newpage allocates a block and backing page.
+/// MkBlock_newpage allocates a block and backing page.
 func MkBlock_newpage(block int, s string, mem Blockmem_i, d Disk_i, cb Block_cb_i) *Bdev_block_t {
 	b := MkBlock(block, s, mem, d, cb)
 	b.New_page()
 	return b
 }
 
-// / MkBlock constructs a block without allocating memory.
+/// MkBlock constructs a block without allocating memory.
 func MkBlock(block int, s string, m Blockmem_i, d Disk_i, cb Block_cb_i) *Bdev_block_t {
 	b := &Bdev_block_t{}
 	b.Block = block
@@ -301,7 +300,7 @@ func MkBlock(block int, s string, m Blockmem_i, d Disk_i, cb Block_cb_i) *Bdev_b
 	return b
 }
 
-// / Free_page releases the page backing the block.
+/// Free_page releases the page backing the block.
 func (blk *Bdev_block_t) Free_page() {
 	blk.Mem.Free(blk.Pa)
 }

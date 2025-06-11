@@ -52,8 +52,9 @@ func mkBcache(m Blockmem_i, disk Disk_i) *bcache_t {
 	return bcache
 }
 
-// returns locked buf with refcnt on page bumped up by 1. caller must call
-// bdev_relse when done with buf.
+/// Get_fill returns a locked block buffer populated from disk.
+/// The block's page reference count is incremented and the caller must
+/// subsequently invoke Relse.
 func (bcache *bcache_t) Get_fill(blkn int, s string, lock bool) *Bdev_block_t {
 	b, created := bcache.bref(blkn, s)
 	if b.Evictnow() {
@@ -74,8 +75,8 @@ func (bcache *bcache_t) Get_fill(blkn int, s string, lock bool) *Bdev_block_t {
 	return b
 }
 
-// returns locked buf with refcnt on page bumped up by 1. caller must call
-// bcache_relse when done with buf
+/// Get_zero returns a locked zero-filled block buffer.
+/// The block reference is retained and must be released with Relse.
 func (bcache *bcache_t) Get_zero(blkn int, s string, lock bool) *Bdev_block_t {
 	b, created := bcache.bref(blkn, s)
 	if bdev_debug {
@@ -90,8 +91,8 @@ func (bcache *bcache_t) Get_zero(blkn int, s string, lock bool) *Bdev_block_t {
 	return b
 }
 
-// returns locked buf with refcnt on page bumped up by 1. caller must call
-// bcache_relse when done with buf
+/// Get_nofill returns a locked block buffer without reading from disk.
+/// The page reference count is incremented and the caller must call Relse.
 func (bcache *bcache_t) Get_nofill(blkn int, s string, lock bool) *Bdev_block_t {
 	b, created := bcache.bref(blkn, s)
 	if bdev_debug {
@@ -106,21 +107,24 @@ func (bcache *bcache_t) Get_nofill(blkn int, s string, lock bool) *Bdev_block_t 
 	return b
 }
 
+/// Write synchronously writes a block to disk.
 func (bcache *bcache_t) Write(b *Bdev_block_t) {
 	bcache.Refup(b, "write")
 	b.Write()
 }
 
+/// Write_async writes a block to disk without waiting for completion.
 func (bcache *bcache_t) Write_async(b *Bdev_block_t) {
 	bcache.Refup(b, "write_async")
 	b.Write_async()
 }
 
+/// Write_async_through queues a write without taking a cache reference.
 func (bcache *bcache_t) Write_async_through(b *Bdev_block_t) {
 	b.Write_async()
 }
 
-// blks must be contiguous on disk
+/// Write_async_blks_through writes a list of contiguous blocks asynchronously.
 func (bcache *bcache_t) Write_async_blks_through(blks *BlkList_t) {
 	if bdev_debug {
 		fmt.Printf("bcache_write_async_blk_through %v\n", blks.Len())
@@ -144,6 +148,7 @@ func (bcache *bcache_t) Write_async_blks_through(blks *BlkList_t) {
 	blks.FrontBlock().Disk.Start(ider)
 }
 
+/// Write_async_through_coalesce combines adjacent blocks and writes them asynchronously.
 func (bcache *bcache_t) Write_async_through_coalesce(blks *BlkList_t) {
 	if bdev_debug {
 		fmt.Printf("bcache_write_async_through_coalesce %v\n", blks.Len())
@@ -177,6 +182,7 @@ func (bcache *bcache_t) Write_async_through_coalesce(blks *BlkList_t) {
 	}
 }
 
+/// Refup increments the cache reference for the block.
 // XXX b methods, but Relse() needs to update pins
 func (bcache *bcache_t) Refup(b *Bdev_block_t, s string) {
 	if _, ok := b.Ref.Up(); !ok {
@@ -184,6 +190,7 @@ func (bcache *bcache_t) Refup(b *Bdev_block_t, s string) {
 	}
 }
 
+/// Relse decrements the cache reference and evicts when the count reaches zero.
 func (bcache *bcache_t) Relse(b *Bdev_block_t, s string) {
 	if bdev_debug {
 		fmt.Printf("bcache_relse: %v %v %v\n", b.Block, s, b.Ref.Refcnt())
@@ -199,8 +206,9 @@ func (bcache *bcache_t) Relse(b *Bdev_block_t, s string) {
 	}
 }
 
+/// Stats reports block cache statistics.
 func (bcache *bcache_t) Stats() string {
-	return "bcache" + bcache.cache.Stats()
+        return "bcache" + bcache.cache.Stats()
 }
 
 //
@@ -323,6 +331,7 @@ func mkBallocater(fs *Fs_t, start, len, first int) *bbitmap_t {
 	return balloc
 }
 
+/// Balloc allocates a new data block and returns its number.
 func (balloc *bbitmap_t) Balloc(opid opid_t) (int, defs.Err_t) {
 	ret, err := balloc.balloc1(opid)
 	if err != 0 {
@@ -348,6 +357,7 @@ func (balloc *bbitmap_t) Balloc(opid opid_t) (int, defs.Err_t) {
 	return ret, 0
 }
 
+/// Bfree releases a previously allocated block number.
 func (balloc *bbitmap_t) Bfree(opid opid_t, blkno int) {
 	blkno -= balloc.first
 	if bdev_debug {
@@ -362,6 +372,7 @@ func (balloc *bbitmap_t) Bfree(opid opid_t, blkno int) {
 	balloc.alloc.Unmark(opid, blkno)
 }
 
+/// Stats reports allocator statistics in string form.
 func (balloc *bbitmap_t) Stats() string {
 	s := "balloc " + balloc.alloc.Stats()
 	balloc.alloc.ResetStats()

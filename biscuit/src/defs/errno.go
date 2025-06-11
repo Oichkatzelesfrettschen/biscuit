@@ -1,6 +1,6 @@
 package defs
 
-// / Posix-style error numbers returned by system calls.
+/// Posix-style error numbers returned by system calls.
 
 const (
 	EPERM         Err_t = 1
@@ -49,5 +49,5 @@ const (
 	ENOHEAP       Err_t = 511
 )
 
-// / Err_t represents a system call error number.
+/// Err_t represents a system call error number.
 type Err_t int
