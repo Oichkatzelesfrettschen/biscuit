@@ -27,9 +27,9 @@ const (
 	BAR5         = 0x24
 )
 
-// width is width of the register in bytes
+/// Pci_read reads a PCI register. Width is the register width in bytes.
 func Pci_read(tag Pcitag_t, reg, width int) int {
-	if width <= 0 || (reg / 4 != (reg + width - 1) / 4) {
+	if width <= 0 || (reg/4 != (reg+width-1)/4) {
 		panic("read spans more than one reg")
 	}
 	enable := 1 << 31
@@ -48,6 +48,7 @@ func Pci_read(tag Pcitag_t, reg, width int) int {
 	return ret & m
 }
 
+/// Pci_write writes a value to a PCI register.
 func Pci_write(tag Pcitag_t, reg, val int) {
 	if reg&3 != 0 {
 		panic("reg must be 32bit aligned")
@@ -77,6 +78,7 @@ func pci_bar_pio(tag Pcitag_t, barn int) uintptr {
 
 // some memory bars include size in the low bits; this method doesn't mask such
 // bits out.
+/// Pci_bar_mem returns the memory address and length of a PCI BAR.
 func Pci_bar_mem(tag Pcitag_t, barn int) (uintptr, int) {
 	if barn < 0 || barn > 4 {
 		panic("bad bar #")
@@ -110,6 +112,7 @@ func Pci_bar_mem(tag Pcitag_t, barn int) (uintptr, int) {
 	return uintptr((ret2 << 32) | ret&^0xf), int(blen)
 }
 
+/// Pci_dump prints a list of PCI devices.
 func Pci_dump() {
 	pcipr := func(b, dev, f int, ind bool) (int, bool) {
 		t := mkpcitag(b, dev, f)
@@ -144,6 +147,7 @@ func Pci_dump() {
 	}
 }
 
+/// Pcibus_attach probes the PCI bus and attaches devices.
 func Pcibus_attach() {
 	pciinfo := func(b, dev, f int) (int, int, bool, bool) {
 		t := mkpcitag(b, dev, f)
@@ -194,9 +198,9 @@ const (
 )
 
 // map from vendor ids to a map of device ids to attach functions
-var alldevs = map[int]map[int]func(int, int, Pcitag_t){
-}
+var alldevs = map[int]map[int]func(int, int, Pcitag_t){}
 
+/// Pci_register associates a PCI device with an attach function.
 func Pci_register(vendor, dev int, attach func(int, int, Pcitag_t)) {
 	if _, ok := alldevs[vendor]; !ok {
 		alldevs[vendor] = make(map[int]func(int, int, Pcitag_t))
@@ -204,6 +208,7 @@ func Pci_register(vendor, dev int, attach func(int, int, Pcitag_t)) {
 	alldevs[vendor][dev] = attach
 }
 
+/// Pci_register_intel registers an Intel device with the PCI subsystem.
 func Pci_register_intel(dev int, attach func(int, int, Pcitag_t)) {
 	Pci_register(PCI_VEND_INTEL, dev, attach)
 }
@@ -221,12 +226,14 @@ func pci_attach(vendorid, devid, bus, dev, fu int) {
 	attach(vendorid, devid, tag)
 }
 
+/// Pcitag_t encodes a PCI bus, device and function.
 type Pcitag_t uint
 
 func mkpcitag(b, d, f int) Pcitag_t {
 	return Pcitag_t(b<<16 | d<<11 | f<<8)
 }
 
+/// Breakpcitag decodes a Pcitag_t into bus, device and function numbers.
 func Breakpcitag(b Pcitag_t) (int, int, int) {
 	bus := int((b >> 16) & 0xff)
 	d := int((b >> 11) & 0x1f)

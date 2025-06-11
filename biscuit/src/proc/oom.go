@@ -15,6 +15,7 @@ type oom_t struct {
 
 var Oom *oom_t = &oom_t{halp: oommsg.OomCh}
 
+/// Oom_init sets up the OOM killer and begins its loop.
 func Oom_init(evict func() (int, int)) {
 	Oom.evict = evict
 	go Oom.reign()
@@ -81,7 +82,7 @@ outter:
 func (o *oom_t) dispatch_peasant(need int) {
 	// the oom killer's memory use should have a small bound
 	var head *Proc_t
-	Ptable.Iter(func (_ int32, p *Proc_t) bool {
+	Ptable.Iter(func(_ int32, p *Proc_t) bool {
 		p.Oomlink = head
 		head = p
 		return false

@@ -10,6 +10,7 @@ import "defs"
 // - only one wait for a specific pid may succeed; others must fail
 // - wait when there are no children must fail
 // - wait for a process should not return thread info and vice versa
+/// Waitst_t holds the exit status of a waited-for child.
 type Waitst_t struct {
 	Pid    int
 	Status int
@@ -18,6 +19,7 @@ type Waitst_t struct {
 	Valid bool
 }
 
+/// Wait_t manages process and thread wait queues.
 type Wait_t struct {
 	sync.Mutex
 	pwait whead_t
@@ -26,6 +28,7 @@ type Wait_t struct {
 	Pid   int
 }
 
+/// Wait_init initializes a Wait_t for the given PID.
 func (w *Wait_t) Wait_init(mypid int) {
 	w.cond = sync.NewCond(w)
 	w.Pid = mypid
@@ -91,6 +94,7 @@ func (wh *whead_t) wremove(prev, h *wlist_t) {
 }
 
 // returns the number of nodes in the linked list
+/// Len returns the count of unreaped children.
 func (w *Wait_t) Len() int {
 	w.Lock()
 	defer w.Unlock()
@@ -152,10 +156,12 @@ func (w *Wait_t) _put(id, status int, isproc bool, atime *accnt.Accnt_t) {
 	w.cond.Broadcast()
 }
 
+/// Reappid reaps a process with the given pid.
 func (w *Wait_t) Reappid(pid int, noblk bool) (Waitst_t, defs.Err_t) {
 	return w._reap(pid, true, noblk)
 }
 
+/// Reaptid reaps a thread with the given tid.
 func (w *Wait_t) Reaptid(tid int, noblk bool) (Waitst_t, defs.Err_t) {
 	return w._reap(tid, false, noblk)
 }

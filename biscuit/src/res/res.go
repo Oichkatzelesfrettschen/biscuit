@@ -11,6 +11,7 @@ import "tinfo"
 
 // blocks until memory is available or returns false if this process has been
 // killed and should terminate.
+/// Resbegin reserves resources and may block until available.
 func Resbegin(want *Res_t) bool {
 	if !Kernel {
 		return true
@@ -37,6 +38,7 @@ const resfail = false
 
 // blocks until memory is available or returns false if this process has been
 // killed and should terminate.
+/// Resadd increases a reservation and may block.
 func Resadd(want *Res_t) bool {
 	if !Kernel {
 		return true
@@ -55,6 +57,7 @@ func Resadd(want *Res_t) bool {
 }
 
 // for reservations when locks may be held; the caller should abort and retry.
+/// Resadd_noblock attempts a reservation without blocking.
 func Resadd_noblock(want *Res_t) bool {
 	if !Kernel {
 		return true
@@ -68,6 +71,7 @@ func Resadd_noblock(want *Res_t) bool {
 	return _reswait(want, true, false)
 }
 
+/// Resend releases the last reservation.
 func Resend() {
 	if !Kernel {
 		return
@@ -78,6 +82,7 @@ func Resend() {
 	runtime.Gresrelease()
 }
 
+/// Human converts a byte count to a human readable string.
 func Human(_bytes int) string {
 	bytes := float64(_bytes)
 	div := float64(1)
@@ -93,7 +98,7 @@ func Human(_bytes int) string {
 
 //var lastp time.Time
 
-//func _reswait(c int, incremental, block bool) bool {
+// func _reswait(c int, incremental, block bool) bool {
 func _reswait(want *Res_t, incremental, block bool) bool {
 	if !Lims {
 		return true
@@ -131,11 +136,13 @@ func _reswait(want *Res_t, incremental, block bool) bool {
 
 // a type to make it easier for code that allocates cached objects to determine
 // when we must try to evict them.
+/// Cacheallocs_t tracks cache allocations.
 type Cacheallocs_t struct {
 	initted bool
 }
 
 // returns true if the caller must try to evict their recent cache allocations.
+/// Shouldevict reports whether the caller should evict cached objects.
 func (ca *Cacheallocs_t) Shouldevict(want *Res_t) bool {
 	if !Kernel {
 		return false
@@ -153,6 +160,7 @@ var Kwaits int
 
 const Lims = true
 
+/// Kreswait reserves resources for a kernel thread and may block.
 func Kreswait(want *Res_t, name string) {
 	if !Kernel {
 		return
@@ -172,6 +180,7 @@ func Kreswait(want *Res_t, name string) {
 	}
 }
 
+/// Kunres releases a kernel reservation.
 func Kunres() int {
 	if !Kernel {
 		return 0
@@ -183,15 +192,18 @@ func Kunres() int {
 	return 0
 }
 
+/// Kresdebug is a placeholder for debug reservation logic.
 func Kresdebug(want *Res_t, name string) {
 	//Kreswait(c, name)
 }
 
+/// Kunresdebug undoes a debug reservation.
 func Kunresdebug() int {
 	//return Kunres()
 	return 0
 }
 
+/// Res_t mirrors runtime.Res_t for kernel use.
 type Res_t = runtime.Res_t
 
 var Onemeg = &Res_t{Objs: runtime.Resobjs_t{1: 1 << 20}}
