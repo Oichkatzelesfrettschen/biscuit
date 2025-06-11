@@ -17,7 +17,7 @@ import "stats"
 
 const ahci_debug = false
 
-func dbg(x string, args...interface{}) {
+func dbg(x string, args ...interface{}) {
 	if ahci_debug {
 		fmt.Printf(x, args...)
 	}
@@ -33,11 +33,15 @@ func dbg(x string, args...interface{}) {
 // - CMD: http://www.t13.org/documents/uploadeddocuments/docs2007/d1699r4a-ata8-acs.pdf
 //
 
+// / Ahci exposes the AHCI disk implementation to the kernel.
+// / It is assigned during Ahci_init and referenced by the filesystem layer.
 var Ahci fs.Disk_i
 
 type blockmem_t struct {
 }
 
+// / Blockmem provides page management for disk I/O buffers.
+// / It is a package level singleton used by the driver.
 var Blockmem = &blockmem_t{}
 
 func (bm *blockmem_t) Alloc() (mem.Pa_t, *mem.Bytepg_t, bool) {
@@ -59,7 +63,15 @@ func (bm *blockmem_t) Refup(pa mem.Pa_t) {
 	mem.Physmem.Refup(pa)
 }
 
-// returns true if start is asynchronous
+// / Start queues a block request on the AHCI port.
+// /
+// / Parameters:
+// /   req - block device request to issue.
+// /
+// / Return value:
+// /   bool - always true since requests are asynchronous.
+// /
+// / No global variables are referenced.
 func (ahci *ahci_disk_t) Start(req *fs.Bdev_req_t) bool {
 	if ahci.port == nil {
 		panic("nil port")
@@ -68,6 +80,12 @@ func (ahci *ahci_disk_t) Start(req *fs.Bdev_req_t) bool {
 	return true
 }
 
+// / Stats returns driver statistics for debugging.
+// /
+// / Return value:
+// /   string - formatted statistics from the port.
+// /
+// / No global variables are referenced.
 func (ahci *ahci_disk_t) Stats() string {
 	if ahci == nil {
 		panic("no adisk")
@@ -90,7 +108,7 @@ func attach_ahci(vid, did int, t pci.Pcitag_t) {
 	}
 	m := mem.Dmaplen32(d.bara, ahci_base_len)
 	d.ahci = (*ahci_reg_t)(unsafe.Pointer(&(m[0])))
-	if LD(&d.ahci.cap) & (1 << 31) == 0 {
+	if LD(&d.ahci.cap)&(1<<31) == 0 {
 		panic("64bit addressess not supported")
 	}
 
@@ -170,7 +188,7 @@ func attach_ahci(vid, did int, t pci.Pcitag_t) {
 	}
 	bus, dev, fnc := pci.Breakpcitag(t)
 	fmt.Printf("AHCI %x %x (%v:%v:%v), bara %#x, MSI %v\n", vid, did, bus,
-	    dev, fnc, d.bara, vec)
+		dev, fnc, d.bara, vec)
 
 	SET(&d.ahci.ghc, AHCI_GHC_AE)
 
@@ -337,7 +355,7 @@ type ahci_port_t struct {
 	cond_flush  *sync.Cond
 	cond_queued *sync.Cond
 
-	hba_id   int
+	hba_id    int
 	port      *port_reg_t
 	nslot     uint32
 	next_slot uint32
@@ -439,18 +457,42 @@ const (
 	IDE_FEATURE_RLA_ENA    = 0xAA
 )
 
+// / LD atomically loads a 32-bit value from a MMIO register.
+// /
+// / Parameters:
+// /   f - pointer to memory mapped register.
+// /
+// / Return value:
+// /   uint32 - value read from the register.
 func LD(f *uint32) uint32 {
 	return atomic.LoadUint32(f)
 }
 
+// / LD64 atomically loads a 64-bit value from a register.
+// /
+// / Parameters:
+// /   f - pointer to memory mapped register.
+// /
+// / Returns the 64-bit value read.
 func LD64(f *uint64) uint64 {
 	return atomic.LoadUint64(f)
 }
 
+// / LD32 is an alias of LD kept for clarity.
+// /
+// / Parameters:
+// /   f - pointer to register.
+// /
+// / Returns the 32-bit value read.
 func LD32(f *uint32) uint32 {
 	return atomic.LoadUint32(f)
 }
 
+// / ST stores a 32-bit value into a register without using atomic operations.
+// /
+// / Parameters:
+// /   f - pointer to register to update.
+// /   v - value to store.
 func ST(f *uint32, v uint32) {
 	// Serial ATA AHCI 1.3.1 spec, section 3: "locked access are not
 	// supported...indeterminite results may occur"
@@ -458,36 +500,72 @@ func ST(f *uint32, v uint32) {
 	runtime.Store32(f, v)
 }
 
+// / ST16 stores a 16-bit value into a register.
+// /
+// / Parameters:
+// /   f - pointer to 16-bit register field.
+// /   v - value to store.
 func ST16(f *uint16, v uint16) {
 	a := (*uint32)(unsafe.Pointer(f))
 	v32 := LD(a)
 	ST(a, (v32&0xFFFF0000)|uint32(v))
 }
 
+// / LD16 loads a 16-bit register field.
+// /
+// / Parameters:
+// /   f - pointer to 16-bit field.
+// /
+// / Returns the value read.
 func LD16(f *uint16) uint16 {
 	a := (*uint32)(unsafe.Pointer(f))
 	v := LD(a)
 	return uint16(v & 0xFFFF)
 }
 
+// / ST64 stores a 64-bit value into a register.
+// /
+// / Parameters:
+// /   f - pointer to register.
+// /   v - value to store.
 func ST64(f *uint64, v uint64) {
 	//atomic.StoreUint64(f, v)
 	runtime.Store64(f, v)
 }
 
+// / SET sets bits in a register via read-modify-write.
+// /
+// / Parameters:
+// /   f - pointer to register.
+// /   v - bit mask to set.
 func SET(f *uint32, v uint32) {
 	runtime.Store32(f, LD(f)|v)
 }
 
+// / SET16 sets bits in a 16-bit register field.
+// /
+// / Parameters:
+// /   f - pointer to field.
+// /   v - bits to set.
 func SET16(f *uint16, v uint16) {
 	ST16(f, LD16(f)|v)
 }
 
+// / CLR16 clears bits in a 16-bit register field.
+// /
+// / Parameters:
+// /   f - pointer to field.
+// /   v - bits to clear.
 func CLR16(f *uint16, v uint16) {
 	n := LD16(f) & ^v
 	ST16(f, n)
 }
 
+// / CLR clears bits in a register via read-modify-write.
+// /
+// / Parameters:
+// /   f - pointer to register.
+// /   v - bits to clear.
 func CLR(f *uint32, v uint32) {
 	v32 := LD(f)
 	n := v32 & ^v
@@ -574,7 +652,7 @@ func (p *ahci_port_t) init() bool {
 	for cmdslot, _ := range p.cmdh {
 		v := &p.cmdt[cmdslot]
 		pa := mem.Physmem.Dmap_v2p((*mem.Pg_t)(unsafe.Pointer(v)))
-		if pa & ((1 << 7) - 1) != 0 {
+		if pa&((1<<7)-1) != 0 {
 			panic("not 128 byte aligned")
 		}
 		p.cmdh[cmdslot].ctba = (uint64)(pa)
@@ -651,11 +729,11 @@ func (p *ahci_port_t) identify() (*identify_device_t, *string, bool) {
 	if (id.features87 >> 14) != 1 {
 		panic("ATA features87 invalid")
 	}
-	dbg("words 82-83 valid: %v\n", (id.features83 >> 14) == 1)
-	dbg("words 85-87 valid: %v\n", (id.features87 >> 14) == 1)
-	dbg("words 119 valid:   %v\n", (id.features119 >> 14) == 1)
+	dbg("words 82-83 valid: %v\n", (id.features83>>14) == 1)
+	dbg("words 85-87 valid: %v\n", (id.features87>>14) == 1)
+	dbg("words 119 valid:   %v\n", (id.features119>>14) == 1)
 	dbg("features 83 : %#x, 48-bit lba: %v\n", id.features83,
-	    (id.features83 & (1 << 10)) != 0)
+		(id.features83&(1<<10)) != 0)
 	if LD16(&id.features86)&IDE_FEATURE86_LBA48 == 0 {
 		fmt.Printf("AHCI: disk too small, driver requires LBA48\n")
 		return nil, nil, false
@@ -745,7 +823,7 @@ func (p *ahci_port_t) fill_prd_v(cmdslot int, blks *fs.BlkList_t) uint64 {
 	cmd := &p.cmdt[cmdslot]
 	slot := 0
 	for blk := blks.FrontBlock(); blk != nil; blk = blks.NextBlock() {
-		if uint64(blk.Pa) & 1 != 0 {
+		if uint64(blk.Pa)&1 != 0 {
 			panic("whut")
 		}
 		ST64(&cmd.prdt[slot].dba, uint64(blk.Pa))
@@ -905,7 +983,7 @@ func (p *ahci_port_t) startslot(req *fs.Bdev_req_t, s int) {
 	}
 	p.inflight[s] = req
 	dbg("AHCI start: issued slot %v req %v sync %v ci %#x\n",
-	    s, req.Cmd, req.Sync, LD(&p.port.ci))
+		s, req.Cmd, req.Sync, LD(&p.port.ci))
 }
 
 // blks must be contiguous on disk (but not necessarily in memory)
@@ -953,7 +1031,7 @@ func (p *ahci_port_t) issue(s int, blks *fs.BlkList_t, cmd uint8) {
 		SET16(&p.cmdh[s].flags, AHCI_CMD_FLAGS_WRITE)
 	}
 	dbg("cmdh: prdtl %#x flags %#x bc %v\n", LD16(&p.cmdh[s].prdtl),
-	    LD16(&p.cmdh[s].flags), LD(&p.cmdh[s].prdbc))
+		LD16(&p.cmdh[s].flags), LD(&p.cmdh[s].prdbc))
 
 	// issue command
 	ST(&p.port.ci, (1 << uint(s)))
@@ -968,7 +1046,7 @@ func (ahci *ahci_disk_t) clear_is() {
 	// time, the host interrupt bit will just get set again. */
 	SET(&ahci.ahci.is, (1 << uint32(ahci.portid)))
 	dbg("clear_is: %v is %#x sact %#x gis %#x\n", ahci.portid,
-	    LD(&ahci.port.port.is), LD(&ahci.port.port.sact), LD(&ahci.ahci.is))
+		LD(&ahci.port.port.is), LD(&ahci.port.port.sact), LD(&ahci.ahci.is))
 }
 
 func (ahci *ahci_disk_t) enable_interrupt() {
@@ -1020,7 +1098,7 @@ func (ahci *ahci_disk_t) probe_port(pid int) bool {
 			ahci.clear_is()
 			ahci.enable_interrupt()
 			go p.queuemgr()
-			return true// only one port
+			return true // only one port
 		}
 	}
 	return false
@@ -1148,6 +1226,11 @@ func ata_verify() {
 	chk(&f.features119, 119*2)
 }
 
+// / Ahci_init registers the AHCI driver with the PCI subsystem.
+// /
+// / No parameters are required and the function returns no values.
+// / It installs attach_ahci for supported devices and relies on
+// / global variable `Ahci` to expose the discovered disk.
 func Ahci_init() {
 	ahci_verify()
 	port_verify()
