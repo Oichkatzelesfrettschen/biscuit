@@ -10,6 +10,8 @@ Welcome to Biscuit's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   dependency_graph
+
 
 
 Indices and tables
