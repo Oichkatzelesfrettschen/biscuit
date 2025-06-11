@@ -24,34 +24,21 @@ of Biscuit's code is in biscuit/.
 
 ## Install
 
-The root of the repository contains the Go **1.10.1** tools and runtime.
-Several Biscuit components modify the runtime directly, primarily in
-`src/runtime/os_linux.go`. These changes rely on internal structures from
-Go 1.10 and have not been ported to newer releases. As a result the kernel
-must be built with Go 1.10.1 instead of a modern Go toolchain.
+The repository includes a complete Go **1.24.x** toolchain. The kernel builds entirely with this toolchain as defined in `go.mod`.
 
-To compile the old runtime using a recent system Go, the `setup.sh` script
-downloads the latest Go release when no local Go installation is found. This
-bootstrap compiler only builds the Biscuit runtime and is not used to build
-kernel code.  Running `./setup.sh` installs a comprehensive FixIt Toolkit using
-APT, pip, and npm packages, automatically searching for and installing any
-`tmux`-related utilities. It also refreshes the package cache and discovers Go
+The `setup.sh` script installs a comprehensive FixIt Toolkit using APT,
+pip, and npm packages, automatically searching for and installing any
+`tmux`-related utilities. It refreshes the package cache and discovers Go
 packages for building, debugging, testing, and fuzzing via `apt-cache`,
-installing any found modules. The script then builds the runtime, kernel,
-documentation, and tests automatically.
+installing any found modules. The script then builds the kernel,
+documentation, and tests automatically using the toolchain declared in
+`go.mod`.
 
 Biscuit used to build on Linux and OpenBSD, but probably only builds on Linux
-currently. You must build Biscuit's modified Go runtime before building
-Biscuit:
+currently. Clone the repository and launch it with QEMU:
 ```
 $ git clone https://github.com/mit-pdos/biscuit.git
-$ cd biscuit/src
-$ ./make.bash
-```
-
-then go to Biscuit's main part and launch it:
-```
-$ cd ../biscuit
+$ cd biscuit
 $ make qemu CPUS=2
 ```
 
@@ -74,6 +61,13 @@ Either unset GOPATH or set it explicitly, for example (assuming that your workin
 ```
 $ GOPATH=$(pwd) make qemu CPUS=2
 ```
+
+The project uses Go modules exclusively, so leaving `GOPATH` unset is usually
+the safest option. When using editor tooling that relies on `GOPATH`, point it
+at the repository root as above.
+
+Run `go mod graph` to inspect module dependencies. The `misc/depgraph` helper
+converts this output to Graphviz for easier visualization.
 
 ## Contributing
 
