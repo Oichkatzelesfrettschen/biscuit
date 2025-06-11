@@ -1,15 +1,14 @@
 package ustr
 
 // / Ustr represents an immutable path or string used by the kernel.
-// / Ustr represents an immutable path or string used by the kernel.
 type Ustr []uint8
 
-// / Isdot reports whether the string equals '.' .
+// / Isdot reports whether the string equals '.'.
 func (us Ustr) Isdot() bool {
 	return len(us) == 1 && us[0] == '.'
 }
 
-// / Isdotdot reports whether the string equals '..' .
+// / Isdotdot reports whether the string equals '..'.
 func (us Ustr) Isdotdot() bool {
 	return len(us) == 2 && us[0] == '.' && us[1] == '.'
 }
@@ -44,9 +43,7 @@ func MkUstrDot() Ustr {
 	return us
 }
 
-// / MkUstrRoot returns a Ustr for the root directory '/' .
-// / \return root Ustr value.
-// / MkUstrRoot returns a Ustr for the root directory '/' .
+// / MkUstrRoot returns a Ustr for the root directory '/'.
 // / \return root Ustr value.
 func MkUstrRoot() Ustr {
 	us := Ustr("/")
