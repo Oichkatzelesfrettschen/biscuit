@@ -1,6 +1,9 @@
 package defs
 
+// / Msgfl_t represents ancillary message flags.
 type Msgfl_t uint
+
+// / Fdopt_t encodes open(2) file descriptor options.
 type Fdopt_t uint
 
 const (
@@ -170,6 +173,7 @@ const (
 	SIGKILL = 9
 )
 
+// / Mkexitsig converts a signal number to the encoded exit status form.
 func Mkexitsig(sig int) int {
 	if sig < 0 || sig > 32 {
 		panic("bad sig")
