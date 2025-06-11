@@ -9,7 +9,7 @@ import "unsafe"
 
 import "ustr"
 
-// A hashtable with a lock-free Get()
+//A hashtable with a lock-free Get()
 
 type hashtable_i interface {
 	Get(key interface{}) (interface{}, bool)
@@ -63,6 +63,7 @@ func (b *bucket_t) iter(f func(interface{}, interface{}) bool) bool {
 
 // /         Hashtable_t represents a basic hash table mapping keys to values.
 // /         It is protected internally by bucket locks.
+
 type Hashtable_t struct {
 	table    []*bucket_t
 	capacity int
@@ -73,6 +74,7 @@ type Hashtable_t struct {
 // /
 // /         \param size number of buckets to allocate
 // /         \return pointer to an initialized Hashtable_t.
+
 func MkHash(size int) *Hashtable_t {
 	ht := &Hashtable_t{}
 	ht.capacity = size
@@ -87,6 +89,7 @@ func MkHash(size int) *Hashtable_t {
 // /         String returns a formatted representation of the table contents.
 // /
 // /         \return string description of bucket chains.
+
 func (ht *Hashtable_t) String() string {
 	s := ""
 	for i, b := range ht.table {
@@ -104,6 +107,7 @@ func (ht *Hashtable_t) String() string {
 // /         Size returns the total number of elements stored in the table.
 // /
 // /         \return element count.
+
 func (ht *Hashtable_t) Size() int {
 	n := 0
 	for _, b := range ht.table {
@@ -113,6 +117,7 @@ func (ht *Hashtable_t) Size() int {
 }
 
 // /         Pair_t represents a key/value tuple returned by Elems.
+
 type Pair_t struct {
 	Key   interface{}
 	Value interface{}
@@ -121,6 +126,7 @@ type Pair_t struct {
 // /         Elems returns all key/value pairs currently stored.
 // /
 // /         \return slice of Pair_t containing each element.
+
 func (ht *Hashtable_t) Elems() []Pair_t {
 	p := make([]Pair_t, 0)
 	for _, b := range ht.table {
@@ -136,6 +142,7 @@ func (ht *Hashtable_t) Elems() []Pair_t {
 // /
 // /         \param key value to search for
 // /         \return stored value and true when found.
+
 func (ht *Hashtable_t) Get(key interface{}) (interface{}, bool) {
 	kh := khash(key)
 	b := ht.table[ht.hash(kh)]
@@ -161,6 +168,7 @@ func (ht *Hashtable_t) Get(key interface{}) (interface{}, bool) {
 // /
 // /         \param key value to search for
 // /         \return stored value and true when found.
+
 func (ht *Hashtable_t) GetRLock(key interface{}) (interface{}, bool) {
 	kh := khash(key)
 	b := ht.table[ht.hash(kh)]
@@ -189,6 +197,7 @@ func (ht *Hashtable_t) GetRLock(key interface{}) (interface{}, bool) {
 // /         \param key identifier
 // /         \param value data to store
 // /         \return previous value and true when inserted.
+
 func (ht *Hashtable_t) Set(key interface{}, value interface{}) (interface{}, bool) {
 	kh := khash(key)
 	b := ht.table[ht.hash(kh)]
@@ -223,6 +232,7 @@ func (ht *Hashtable_t) Set(key interface{}, value interface{}) (interface{}, boo
 // /         Del removes a key from the table.
 // /
 // /         \param key identifier to delete
+
 func (ht *Hashtable_t) Del(key interface{}) {
 	kh := khash(key)
 	b := ht.table[ht.hash(kh)]
@@ -258,6 +268,7 @@ func (ht *Hashtable_t) Del(key interface{}) {
 // /         Iteration stops when f returns true.
 // /         \param f visitor function
 // /         \return true if f returned true for any element.
+
 func (ht *Hashtable_t) Iter(f func(interface{}, interface{}) bool) bool {
 	for _, b := range ht.table {
 		if b.iter(f) {
