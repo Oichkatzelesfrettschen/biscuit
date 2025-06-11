@@ -9,13 +9,13 @@ import "fdops"
 import . "inet"
 import "log"
 
-// / NBYTES is the size of the network test payload.
+/// NBYTES is the size of the network test payload.
 const NBYTES = 1024
 
-// / VAL is the initial value written by the client.
+/// VAL is the initial value written by the client.
 const VAL = 1
 
-// / VAL1 is the response value from the server.
+/// VAL1 is the response value from the server.
 const VAL1 = 2
 
 func doClnt(clnt fdops.Fdops_i, sa []uint8, t *testing.T) {
@@ -113,7 +113,7 @@ func client(port int, t *testing.T) {
 	}
 }
 
-// / TestSimple exercises a single client/server exchange.
+/// TestSimple exercises a single client/server exchange.
 func TestSimple(t *testing.T) {
 	net_init()
 
@@ -130,10 +130,10 @@ func TestSimple(t *testing.T) {
 	fmt.Printf("TestConnect Done\n")
 }
 
-// / NCLIENT is the number of concurrent clients used in tests.
+/// NCLIENT is the number of concurrent clients used in tests.
 const NCLIENT = 5
 
-// / TestClients runs multiple clients in parallel against one server.
+/// TestClients runs multiple clients in parallel against one server.
 func TestClients(t *testing.T) {
 	net_init()
 

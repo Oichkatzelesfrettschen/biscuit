@@ -15,7 +15,7 @@ import "fs"
 import "mem"
 import "ustr"
 
-// / SMALL and LARGE define file sizes used in tests.
+/// SMALL and LARGE define file sizes used in tests.
 const (
 	SMALL = 512
 	LARGE = 8 * 4096
@@ -27,7 +27,7 @@ const (
 	ndatablks  = 20
 )
 
-// / TestCanonicalize verifies path canonicalization.
+/// TestCanonicalize verifies path canonicalization.
 func TestCanonicalize(t *testing.T) {
 	if !ustr.Ustr("/").Eq(bpath.Canonicalize(ustr.Ustr("//"))) {
 		t.Fatalf("//")
@@ -116,13 +116,13 @@ func doTestDcacheSimple(t *testing.T) {
 	os.Remove(dst)
 }
 
-// / NSTAT is the number of stat operations performed in benchmarks.
+/// NSTAT is the number of stat operations performed in benchmarks.
 const NSTAT = 1000000
 
-// / NGO is the number of goroutines used in parallel tests.
+/// NGO is the number of goroutines used in parallel tests.
 const NGO = 4
 
-// / DcacheFuncRead benchmarks directory cache reads.
+/// DcacheFuncRead benchmarks directory cache reads.
 func DcacheFuncRead(t *testing.T, tfs *Ufs_t, dir ustr.Ustr) {
 	var wg sync.WaitGroup
 
@@ -145,7 +145,7 @@ func DcacheFuncRead(t *testing.T, tfs *Ufs_t, dir ustr.Ustr) {
 	fmt.Printf("stats took %v\n", stop.Sub(start))
 }
 
-// / TestDcachePerfRead measures read-cache performance.
+/// TestDcachePerfRead measures read-cache performance.
 func TestDcachePerfRead(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, nlogblks, ninodeblks, ndatablks)
@@ -178,10 +178,10 @@ func TestDcachePerfRead(t *testing.T) {
 	os.Remove(dst)
 }
 
-// / NCREATE is the number of files created per worker in write benchmarks.
+/// NCREATE is the number of files created per worker in write benchmarks.
 const NCREATE = 100000
 
-// / DcacheFuncWrite benchmarks directory cache writes.
+/// DcacheFuncWrite benchmarks directory cache writes.
 func DcacheFuncWrite(t *testing.T, tfs *Ufs_t, dir ustr.Ustr) {
 	var wg sync.WaitGroup
 	start := time.Now()
@@ -215,7 +215,7 @@ func DcacheFuncWrite(t *testing.T, tfs *Ufs_t, dir ustr.Ustr) {
 	fmt.Printf("Perfwrite took %v\n", stop.Sub(start))
 }
 
-// / TestDcachePerfWrite measures write-cache performance.
+/// TestDcachePerfWrite measures write-cache performance.
 func TestDcachePerfWrite(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, ManyLogBlks, ManyInodeBlks, ManyDataBlks)
@@ -334,7 +334,7 @@ func uniqfile(id int) string {
 // Simple test
 //
 
-// / TestFSSimple exercises simple filesystem operations.
+/// TestFSSimple exercises simple filesystem operations.
 func TestFSSimple(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, nlogblks, ninodeblks, ndatablks)
@@ -358,7 +358,7 @@ func TestFSSimple(t *testing.T) {
 //
 // Test eviction
 
-// / TestEvict verifies eviction of cached data.
+/// TestEvict verifies eviction of cached data.
 func TestEvict(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, nlogblks, ninodeblks, ndatablks)
@@ -406,7 +406,7 @@ func doTestInodeReuse(tfs *Ufs_t, n int, t *testing.T) {
 	}
 }
 
-// / TestFSInodeReuse ensures freed inodes are reused.
+/// TestFSInodeReuse ensures freed inodes are reused.
 func TestFSInodeReuse(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, nlogblks, ninodeblks, ndatablks)
@@ -445,7 +445,7 @@ func doTestInodeReuseRename(tfs *Ufs_t, n int, t *testing.T) {
 	}
 }
 
-// / TestFSInodeReuseRename checks inode reuse after rename operations.
+/// TestFSInodeReuseRename checks inode reuse after rename operations.
 func TestFSInodeReuseRename(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, nlogblks, ninodeblks, ndatablks)
@@ -484,7 +484,7 @@ func doTestBlockReuse(tfs *Ufs_t, n int, t *testing.T) {
 	}
 }
 
-// / TestFSBlockReuse ensures freed blocks are reused.
+/// TestFSBlockReuse ensures freed blocks are reused.
 func TestFSBlockReuse(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, nlogblks, ninodeblks, ndatablks)
@@ -545,7 +545,7 @@ func doCheckOrphans(tfs *Ufs_t, t *testing.T, nfile int) {
 	}
 }
 
-// / TestFSOrphanOne ensures orphaned inodes are cleaned up.
+/// TestFSOrphanOne ensures orphaned inodes are cleaned up.
 func TestFSOrphanOne(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, nlogblks, ninodeblks, ndatablks)
@@ -575,7 +575,7 @@ func TestFSOrphanOne(t *testing.T) {
 	os.Remove(dst)
 }
 
-// / Constants describing large filesystem layouts used in stress tests.
+/// Constants describing large filesystem layouts used in stress tests.
 const (
 	OrphanFiles   = 1000
 	ManyInodeBlks = 2000
@@ -583,7 +583,7 @@ const (
 	ManyLogBlks   = 256
 )
 
-// / TestFSOrphansMany stresses orphan handling under heavy load.
+/// TestFSOrphansMany stresses orphan handling under heavy load.
 func TestFSOrphansMany(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, ManyLogBlks, ManyInodeBlks, ManyDataBlks)
@@ -645,7 +645,7 @@ func concurrent(t *testing.T) {
 	ShutdownFS(tfs)
 }
 
-// / TestFSConcurNotSame runs concurrent operations on different files.
+/// TestFSConcurNotSame runs concurrent operations on different files.
 func TestFSConcurNotSame(t *testing.T) {
 	concurrent(t)
 }
@@ -654,12 +654,12 @@ func TestFSConcurNotSame(t *testing.T) {
 // Test concurrent commit of blocks with a new transaction updating same blocks
 //
 
-// / MoreLogBlks allocates additional log space for concurrency tests.
+/// MoreLogBlks allocates additional log space for concurrency tests.
 const (
 	MoreLogBlks = nlogblks * 4
 )
 
-// / TestFSConcurSame runs concurrent updates on the same file.
+/// TestFSConcurSame runs concurrent updates on the same file.
 func TestFSConcurSame(t *testing.T) {
 	n := 8
 	dst := "tmp.img"
@@ -697,7 +697,7 @@ func TestFSConcurSame(t *testing.T) {
 	ShutdownFS(tfs)
 }
 
-// / TestFSConcurUnlink concurrently creates and removes files.
+/// TestFSConcurUnlink concurrently creates and removes files.
 func TestFSConcurUnlink(t *testing.T) {
 	n := 8
 	dst := "tmp.img"
@@ -750,7 +750,7 @@ func TestFSConcurUnlink(t *testing.T) {
 // Test that the last holder of the inode ref frees blocks
 //
 
-// / TestConcurFree checks that blocks are freed under concurrent access.
+/// TestConcurFree checks that blocks are freed under concurrent access.
 func TestConcurFree(t *testing.T) {
 	dst := "tmp.img"
 	MkDisk(dst, nil, nlogblks, ninodeblks, 10*ndatablks)
@@ -812,7 +812,7 @@ const (
 	norderedblks     = 7 // this causes reuse
 )
 
-// / TestOrderedFile tests ordered updates to a single file.
+/// TestOrderedFile tests ordered updates to a single file.
 func TestOrderedFile(t *testing.T) {
 	dst := "tmp.img"
 
@@ -891,18 +891,18 @@ func doOrderedDir(t *testing.T, force bool) {
 	}
 }
 
-// / TestOrderderDirRecover verifies directory recovery with ordered writes.
+/// TestOrderderDirRecover verifies directory recovery with ordered writes.
 func TestOrderderDirRecover(t *testing.T) {
 	doOrderedDir(t, false)
 }
 
-// / TestOrderedDirApply verifies applying ordered directory operations.
+/// TestOrderedDirApply verifies applying ordered directory operations.
 func TestOrderedDirApply(t *testing.T) {
 	doOrderedDir(t, true)
 }
 
 // Test ordered to logged writes.  XXX Hard to get at without testing all possible traces
-// / TestOrderedFileDir combines ordered file and directory operations.
+/// TestOrderedFileDir combines ordered file and directory operations.
 func TestOrderedFileDir(t *testing.T) {
 	dst := "tmp.img"
 	d := ustr.Ustr("d")
@@ -950,7 +950,7 @@ func TestOrderedFileDir(t *testing.T) {
 // Check traces for crash safety
 //
 
-// / natomicblks is the number of blocks used in atomicity tests.
+/// natomicblks is the number of blocks used in atomicity tests.
 const natomicblks = 2
 
 func copyDisk(src, dst string) (err error) {
@@ -1160,7 +1160,7 @@ func produceTrace(disk string, t *testing.T, init func(*Ufs_t), run func(*Ufs_t,
 	os.Remove("tmp.img")
 }
 
-// / TestTracesAtomic checks crash recovery using recorded traces.
+/// TestTracesAtomic checks crash recovery using recorded traces.
 func TestTracesAtomic(t *testing.T) {
 	fmt.Printf("Test TracesAtomic ...\n")
 	disk := "disk.img"
@@ -1177,7 +1177,7 @@ func TestTracesAtomic(t *testing.T) {
 // Test: big ifree (i.e., several ops, spanning several transactions)
 //
 
-// / Large scale constants for stress testing free space handling.
+/// Large scale constants for stress testing free space handling.
 const (
 	ManyManyDataBlks = 1000000
 	FileSizeBlks     = 200
@@ -1250,7 +1250,7 @@ func blk2bytepg(d []byte) *mem.Bytepg_t {
 // mark many blocks as allocated so that creating a file will have to mark many
 // bit map blocks, which then ifree will update in several ops, spanning
 // several transactions.
-// / FillDisk pre-allocates most blocks in the filesystem image.
+/// FillDisk pre-allocates most blocks in the filesystem image.
 func FillDisk(disk string) {
 	f, err := os.OpenFile(disk, os.O_RDWR, 0755)
 	if err != nil {
@@ -1313,7 +1313,7 @@ func genSyncTraces(trace trace_t, t *testing.T, disk string, apply bool, check f
 	return cnt
 }
 
-// / TestBigFree tests freeing a very large number of blocks.
+/// TestBigFree tests freeing a very large number of blocks.
 func TestBigFree(t *testing.T) {
 	fmt.Printf("Test BigFree ...\n")
 	disk := "disk.img"
