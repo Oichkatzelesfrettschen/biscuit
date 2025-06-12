@@ -57,8 +57,8 @@ type Option func(*options)
 // ICU allows the user to define embedding levels. This may be used, for example,
 // to use hierarchical structure of markup languages to define embeddings.
 // The following option may be a way to expose this functionality in this API.
-// // LevelFunc sets a function that associates nesting levels with the given text.
-// // The levels function will be called with monotonically increasing values for p.
+//// LevelFunc sets a function that associates nesting levels with the given text.
+//// The levels function will be called with monotonically increasing values for p.
 // func LevelFunc(levels func(p int) int) Option {
 // 	panic("unimplemented")
 // }
@@ -147,8 +147,8 @@ func (o *Ordering) Run(i int) Run {
 }
 
 // TODO: perhaps with options.
-// // Reorder creates a reader that reads the runes in visual order per character.
-// // Modifiers remain after the runes they modify.
+//// Reorder creates a reader that reads the runes in visual order per character.
+//// Modifiers remain after the runes they modify.
 // func (l *Runs) Reorder() io.Reader {
 // 	panic("unimplemented")
 // }

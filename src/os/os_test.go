@@ -1218,7 +1218,7 @@ func TestChdirAndGetwd(t *testing.T) {
 	// These are chosen carefully not to be symlinks on a Mac
 	// (unlike, say, /var, /etc), except /tmp, which we handle below.
 	dirs := []string{"/", "/usr/bin", "/tmp"}
-	// /usr/bin does not usually exist on Plan 9 or Android.
+	///usr/bin does not usually exist on Plan 9 or Android.
 	switch runtime.GOOS {
 	case "android":
 		dirs = []string{"/", "/system/bin"}

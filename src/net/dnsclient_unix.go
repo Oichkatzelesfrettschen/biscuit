@@ -577,7 +577,7 @@ func (r *Resolver) goLookupIPCNAMEOrder(ctx context.Context, name string, order 
 			}
 
 			// Presotto says it's okay to assume that servers listed in
-			// /etc/resolv.conf are recursive resolvers.
+			///etc/resolv.conf are recursive resolvers.
 			//
 			// We asked for recursion, so it should have included all the
 			// answers we need in this one packet.

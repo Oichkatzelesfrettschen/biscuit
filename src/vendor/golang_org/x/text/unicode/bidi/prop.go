@@ -20,8 +20,8 @@ var trie = newBidiTrie(0)
 // if this is worth exposing or if we can find a way to speed up the Class
 // method.
 //
-// // CompactClass is like Class, but maps all of the BiDi control classes
-// // (LRO, RLO, LRE, RLE, PDF, LRI, RLI, FSI, PDI) to the class Control.
+//// CompactClass is like Class, but maps all of the BiDi control classes
+//// (LRO, RLO, LRE, RLE, PDF, LRI, RLI, FSI, PDI) to the class Control.
 // func (p Properties) CompactClass() Class {
 // 	return Class(p.entry & 0x0F)
 // }

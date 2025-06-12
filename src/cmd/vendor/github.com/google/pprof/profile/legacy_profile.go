@@ -1015,14 +1015,14 @@ func removeLoggingInfo(line string) string {
 }
 
 // ParseMemoryMap parses a memory map in the format of
-// /proc/self/maps, and overrides the mappings in the current profile.
+///proc/self/maps, and overrides the mappings in the current profile.
 // It renumbers the samples and locations in the profile correspondingly.
 func (p *Profile) ParseMemoryMap(rd io.Reader) error {
 	return p.ParseMemoryMapFromScanner(bufio.NewScanner(rd))
 }
 
 // ParseMemoryMapFromScanner parses a memory map in the format of
-// /proc/self/maps or a variety of legacy format, and overrides the
+///proc/self/maps or a variety of legacy format, and overrides the
 // mappings in the current profile.  It renumbers the samples and
 // locations in the profile correspondingly.
 func (p *Profile) ParseMemoryMapFromScanner(s *bufio.Scanner) error {

@@ -61,7 +61,7 @@ type tagAndLength struct {
 // CONTEXT-SPECIFIC 42], that means that the tag is replaced by another.
 //
 // On the other hand, if it said [EXPLICIT CONTEXT-SPECIFIC 10], then an
-// /additional/ tag would wrap the default tag. This explicit tag will have the
+///additional/ tag would wrap the default tag. This explicit tag will have the
 // compound flag set.
 //
 // (This is used in order to remove ambiguity with optional elements.)

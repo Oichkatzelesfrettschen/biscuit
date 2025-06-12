@@ -109,7 +109,7 @@ func TestWindowsEvalSymlinks(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	// /tmp may itself be a symlink! Avoid the confusion, although
+	///tmp may itself be a symlink! Avoid the confusion, although
 	// it means trusting the thing we're testing.
 	tmpDir, err = filepath.EvalSymlinks(tmpDir)
 	if err != nil {

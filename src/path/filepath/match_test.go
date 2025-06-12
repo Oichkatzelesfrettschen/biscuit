@@ -270,7 +270,7 @@ func TestWindowsGlob(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	// /tmp may itself be a symlink
+	///tmp may itself be a symlink
 	tmpDir, err = EvalSymlinks(tmpDir)
 	if err != nil {
 		t.Fatal("eval symlink for tmp dir:", err)

@@ -769,7 +769,7 @@ func TestHelperProcess(*testing.T) {
 		case "netbsd":
 			// TODO(jsing): This currently fails on NetBSD due to
 			// the cloned file descriptors that result from opening
-			// /dev/urandom.
+			///dev/urandom.
 			// https://golang.org/issue/3955
 		case "solaris":
 			// TODO(aram): This fails on Solaris because libc opens

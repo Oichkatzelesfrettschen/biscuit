@@ -1020,7 +1020,7 @@ func parseAdditionalSections(l string, b *bytes.Buffer, p *Profile) (err error) 
 }
 
 // ParseMemoryMap parses a memory map in the format of
-// /proc/self/maps, and overrides the mappings in the current profile.
+///proc/self/maps, and overrides the mappings in the current profile.
 // It renumbers the samples and locations in the profile correspondingly.
 func (p *Profile) ParseMemoryMap(rd io.Reader) error {
 	b := bufio.NewReader(rd)

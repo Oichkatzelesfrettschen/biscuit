@@ -233,7 +233,7 @@ func jsRegexpEscaper(args ...interface{}) string {
 	s, _ := stringify(args...)
 	s = replace(s, jsRegexpReplacementTable)
 	if s == "" {
-		// /{{.X}}/ should not produce a line comment when .X == "".
+		///{{.X}}/ should not produce a line comment when .X == "".
 		return "(?:)"
 	}
 	return s
