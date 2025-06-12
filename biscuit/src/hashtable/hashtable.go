@@ -61,20 +61,18 @@ func (b *bucket_t) iter(f func(interface{}, interface{}) bool) bool {
 	return false
 }
 
-// /         Hashtable_t represents a basic hash table mapping keys to values.
-// /         It is protected internally by bucket locks.
-
+///         Hashtable_t represents a basic hash table mapping keys to values.
+///         It is protected internally by bucket locks.
 type Hashtable_t struct {
 	table    []*bucket_t
 	capacity int
 	maxchain int
 }
 
-// /         MkHash allocates a new Hashtable_t with the given size.
-// /
-// /         \param size number of buckets to allocate
-// /         \return pointer to an initialized Hashtable_t.
-
+///         MkHash allocates a new Hashtable_t with the given size.
+///
+///         \param size number of buckets to allocate
+///         \return pointer to an initialized Hashtable_t.
 func MkHash(size int) *Hashtable_t {
 	ht := &Hashtable_t{}
 	ht.capacity = size
@@ -116,8 +114,7 @@ func (ht *Hashtable_t) Size() int {
 	return n
 }
 
-// /         Pair_t represents a key/value tuple returned by Elems.
-
+///         Pair_t represents a key/value tuple returned by Elems.
 type Pair_t struct {
 	Key   interface{}
 	Value interface{}
