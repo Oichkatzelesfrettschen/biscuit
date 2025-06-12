@@ -11,7 +11,7 @@ CXXFLAGS := $(BASEFLAGS) -ffreestanding -nostdlib -fno-builtin -mno-red-zone
 GOPATH ?= $(shell pwd)
 # bootloader sources
 ASMS := boot.S
-CS   := bootmain.c main.c chentry.c
+CS   := bootmain.c main.c
 SRCS := $(ASMS) $(CS)
 
 # kernel sources
@@ -207,8 +207,8 @@ $(K)/bins.go: $(BGOS) $(K)/prepbins.py
 main: main.o
 	$(LD) -static -e main -o $@ $<
 
-chentry: $(K)/chentry.c
-	$(CC) $(BASEFLAGS) -o $@ $(K)/chentry.c
+chentry: $(K)/chentry.go $(GOBIN)
+       GOPATH="$(GOPATH)" $(GOBIN) build -o $@ $(K)/chentry.go
 
 clean:
 	rm -f $(BGOS) $(OBJS) $(RFS) $(K)/boot.elf $(K)/d.img $(K)/main $(K)/boot $(K)/main.gobin \
