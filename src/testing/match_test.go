@@ -171,7 +171,7 @@ func TestNaming(t *T) {
 		{"b", "x/b#1000"}, // rigged, see above
 		{"b", "x/b#1001"},
 
-		// // Sanitizing
+		//// Sanitizing
 		{"A:1 B:2", "x/A:1_B:2"},
 		{"s\t\r\u00a0", "x/s___"},
 		{"\x01", `x/\x01`},

@@ -249,7 +249,7 @@ func (p *parser) next0() {
 
 // Consume a comment and return it and the line on which it ends.
 func (p *parser) consumeComment() (comment *ast.Comment, endline int) {
-	// /*-style comments may end on a different line than where they start.
+	///*-style comments may end on a different line than where they start.
 	// Scan the comment for '\n' chars and adjust endline accordingly.
 	endline = p.file.Line(p.pos)
 	if p.lit[1] == '*' {

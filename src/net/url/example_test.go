@@ -52,8 +52,8 @@ func ExampleURL_roundtrip() {
 	fmt.Println(u.RawPath)
 	fmt.Println(u.String())
 	// Output:
-	// /foo/bar
-	// /foo%2fbar
+	///foo/bar
+	///foo%2fbar
 	// https://example.com/foo%2fbar
 }
 
@@ -88,7 +88,7 @@ func ExampleURL_EscapedPath() {
 	}
 	fmt.Println(u.EscapedPath())
 	// Output:
-	// /path%20with%20spaces
+	///path%20with%20spaces
 }
 
 func ExampleURL_Hostname() {

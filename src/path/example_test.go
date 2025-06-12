@@ -15,7 +15,7 @@ func ExampleBase() {
 	fmt.Println(path.Base(""))
 	// Output:
 	// b
-	// /
+	///
 	// .
 }
 
@@ -52,11 +52,11 @@ func ExampleDir() {
 	fmt.Println(path.Dir("/"))
 	fmt.Println(path.Dir(""))
 	// Output:
-	// /a/b
+	///a/b
 	// a/b
-	// /a
+	///a
 	// a
-	// /
+	///
 	// .
 }
 

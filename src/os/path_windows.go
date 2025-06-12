@@ -186,10 +186,10 @@ func fixLongPath(path string) string {
 			// empty block
 			r++
 		case path[r] == '.' && (r+1 == n || IsPathSeparator(path[r+1])):
-			// /./
+			///./
 			r++
 		case r+1 < n && path[r] == '.' && path[r+1] == '.' && (r+2 == n || IsPathSeparator(path[r+2])):
-			// /../ is currently unhandled
+			///../ is currently unhandled
 			return path
 		default:
 			pathbuf[w] = '\\'

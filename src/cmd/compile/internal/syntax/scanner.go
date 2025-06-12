@@ -64,7 +64,7 @@ func (s *scanner) init(src io.Reader, errh func(line, col uint, msg string), mod
 // If the scanner mode includes the directives (but not the comments)
 // flag, only comments containing a //line, /*line, or //go: directive
 // are reported, in the same way as regular comments. Directives in
-// //-style comments are only recognized if they are at the beginning
+////-style comments are only recognized if they are at the beginning
 // of a line.
 //
 func (s *scanner) next() {
