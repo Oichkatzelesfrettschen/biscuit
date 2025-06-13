@@ -3,38 +3,32 @@ package util
 
 import "unsafe"
 
-/// Min returns the smaller of a and b.
-/// \param a first value
-/// \param b second value
-/// \return the smaller of a and b.
-func Min(a, b int) int {
+// Int is satisfied by all built-in integer types.
+type Int interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
+}
+
+// Min returns the smaller of a and b.
+func Min[T Int](a, b T) T {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-/// Rounddown aligns v down to the nearest multiple of b.
-/// \param v value to align
-/// \param b alignment boundary
-/// \return v rounded down to a multiple of b.
-func Rounddown(v int, b int) int {
+// Rounddown aligns v down to the nearest multiple of b.
+func Rounddown[T Int](v, b T) T {
 	return v - (v % b)
 }
 
-/// Roundup aligns v up to the nearest multiple of b.
-/// \param v value to align
-/// \param b alignment boundary
-/// \return v rounded up to a multiple of b.
-func Roundup(v int, b int) int {
+// Roundup aligns v up to the nearest multiple of b.
+func Roundup[T Int](v, b T) T {
 	return Rounddown(v+b-1, b)
 }
 
-/// Readn reads n bytes from a starting at offset off and returns the value.
-/// \param a byte slice to read from
-/// \param n number of bytes to read
-/// \param off starting offset within a
-/// \return the integer value read from the slice.
+// Readn reads n bytes from a starting at off and returns the value.
+// It panics if the requested region is out of bounds or the size is unsupported.
 func Readn(a []uint8, n int, off int) int {
 	if off < 0 || off+n > len(a) {
 		panic("Readn out of bounds")
@@ -56,11 +50,8 @@ func Readn(a []uint8, n int, off int) int {
 	return ret
 }
 
-/// Writen writes val using sz bytes into a starting at offset off.
-/// \param a destination slice
-/// \param sz number of bytes to write
-/// \param off starting offset
-/// \param val value to write
+// Writen writes val using sz bytes into a starting at off.
+// It panics if the destination is out of bounds or the size is unsupported.
 func Writen(a []uint8, sz int, off int, val int) {
 	if off < 0 || off+sz > len(a) {
 		panic("Writen out of bounds")
